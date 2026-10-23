@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+edge-temp/
+screenshot*.png
+.DS_Store
+Thumbs.db

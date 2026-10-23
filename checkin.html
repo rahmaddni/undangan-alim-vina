@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in Kehadiran Tamu - Thomas & Lydia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1e1610;
+            --gold: #c59b27;
+            --gold-light: #dfb746;
+            --bg: #f8f6f2;
+            --card: #ffffff;
+            --text: #2c2523;
+            --muted: #786f66;
+            --border: #e8e2d8;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .checkin-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(30, 22, 16, 0.08);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-top {
+            background: linear-gradient(135deg, var(--primary) 0%, #3a2b20 100%);
+            padding: 2.2rem 1.5rem 2.8rem;
+            color: #ffffff;
+            position: relative;
+        }
+
+        .wedding-monogram {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--gold);
+            margin: 0 auto 0.75rem;
+            background: rgba(197, 155, 39, 0.15);
+        }
+
+        .card-top h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-top p {
+            font-size: 0.85rem;
+            color: var(--gold-light);
+            letter-spacing: 1px;
+        }
+
+        .status-badge-wrapper {
+            margin-top: -24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .status-badge {
+            background: var(--success);
+            color: #ffffff;
+            padding: 0.65rem 1.4rem;
+            border-radius: 30px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+        }
+
+        .status-badge.already {
+            background: var(--warning);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+        }
+
+        .card-body {
+            padding: 1.75rem 1.5rem 2rem;
+        }
+
+        .guest-greeting {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .guest-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.25rem;
+            line-height: 1.3;
+        }
+
+        .info-grid {
+            background: #faf8f5;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            text-align: left;
+        }
+
+        .info-item .label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .info-item .val {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .welcome-msg {
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.5;
+            margin-bottom: 1.75rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold) 0%, #b3881b 100%);
+            color: #ffffff;
+        }
+        .btn-gold:hover {
+            box-shadow: 0 4px 12px rgba(197, 155, 39, 0.35);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover {
+            background: #f1ede6;
+        }
+
+        .loading-state {
+            padding: 3rem 1.5rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="checkin-card" id="card-content">
+        <div class="loading-state" id="loading-state">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--gold); margin-bottom: 1rem; display:block;"></i>
+            <p>Memproses konfirmasi check-in...</p>
+        </div>
+
+        <div id="result-view" style="display: none;">
+            <div class="card-top">
+                <div class="wedding-monogram">TL</div>
+                <h1>Thomas & Lydia</h1>
+                <p>31 . 12 . 2026</p>
+            </div>
+
+            <div class="status-badge-wrapper">
+                <div class="status-badge" id="badge-status">
+                    <i class="fas fa-check-circle"></i> CHECK-IN BERHASIL
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="guest-greeting" id="guest-salutation">Kepada Yth. Bapak/Ibu/Saudara/i</div>
+                <div class="guest-name" id="guest-name">Nama Tamu</div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Kategori</span>
+                        <span class="val" id="guest-cat">Umum</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Jumlah Tamu</span>
+                        <span class="val" id="guest-pax">1 Orang</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Waktu Check-in</span>
+                        <span class="val" id="checkin-time">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Status Verifikasi</span>
+                        <span class="val" style="color: var(--success);"><i class="fas fa-shield-alt"></i> Terverifikasi</span>
+                    </div>
+                </div>
+
+                <p class="welcome-msg" id="welcome-msg">
+                    Selamat datang di acara pernikahan kami! Merupakan kebahagiaan bagi kami atas kehadiran Anda.
+                </p>
+
+                <div class="action-buttons">
+                    <a href="/" id="btn-undangan" class="btn btn-gold">
+                        <i class="fas fa-envelope-open-text"></i> Buka Undangan Digital
+                    </a>
+                    <a href="/admin" class="btn btn-outline">
+                        <i class="fas fa-user-shield"></i> Buka Dashboard Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function processCheckin() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id') || '';
+            const name = params.get('name') || params.get('to') || '';
+
+            try {
+                const res = await fetch('/api/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name, code: window.location.href })
+                });
+                const data = await res.json();
+
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('result-view').style.display = 'block';
+
+                if (data.success && data.guest) {
+                    const g = data.guest;
+                    document.getElementById('guest-name').textContent = g.name;
+                    document.getElementById('guest-salutation').textContent = `Kepada Yth. ${g.salutation || 'Bapak/Ibu/Saudara/i'}`;
+                    document.getElementById('guest-cat').textContent = g.category || 'Umum';
+                    document.getElementById('guest-pax').textContent = `${g.pax || 1} Orang`;
+                    document.getElementById('checkin-time').textContent = g.checkin_time || 'Baru saja';
+
+                    const badge = document.getElementById('badge-status');
+                    if (data.already_checked_in) {
+                        badge.classList.add('already');
+                        badge.innerHTML = `<i class="fas fa-info-circle"></i> SUDAH CHECK-IN`;
+                        document.getElementById('welcome-msg').textContent = 
+                            `Tamu '${g.name}' telah tercatat check-in sebelumnya pada ${g.checkin_time}. Data telah sinkron dengan admin.`;
+                    } else {
+                        badge.classList.remove('already');
+                        badge.innerHTML = `<i class="fas fa-check-circle"></i> CHECK-IN BERHASIL`;
+                        document.getElementById('welcome-msg').textContent = 
+                            `Selamat datang di acara pernikahan Thomas & Lydia! Data kehadiran Anda berhasil dicatat dan disinkronkan ke meja panitia.`;
+                    }
+
+                    // Update link back to invitation with name
+                    document.getElementById('btn-undangan').href = `/?to=${encodeURIComponent(g.name)}`;
+                } else {
+                    document.getElementById('badge-status').classList.add('already');
+                    document.getElementById('badge-status').innerHTML = `<i class="fas fa-exclamation-triangle"></i> GAGAL CHECK-IN`;
+                    document.getElementById('guest-name').textContent = name || 'Tamu Tidak Dikenal';
+                    document.getElementById('welcome-msg').textContent = data.message || 'Data tamu tidak ditemukan di sistem.';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading-state').innerHTML = `
+                    <i class="fas fa-times-circle" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                    <p style="color: #ef4444; font-weight: 600;">Gagal terhubung ke backend server.</p>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', processCheckin);
+    </script>
+</body>
+</html>

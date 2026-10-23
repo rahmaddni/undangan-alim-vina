@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Admin Dashboard & QR Check-in - Thomas & Lydia Wedding</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-dark: #1f1610;
+            --primary-brown: #38281d;
+            --gold-accent: #c59b27;
+            --gold-light: #dfb746;
+            --gold-hover: #b3881b;
+            --bg-light: #f6f3ee;
+            --card-bg: #ffffff;
+            --text-dark: #2c2523;
+            --text-muted: #6b635b;
+            --border-color: #e5ded3;
+            --badge-present-bg: #ecfdf5;
+            --badge-present-text: #065f46;
+            --badge-notpresent-bg: #fff1f2;
+            --badge-notpresent-text: #9f1239;
+            --badge-pending-bg: #fefce8;
+            --badge-pending-text: #854d0e;
+            --badge-checkin-bg: #dcfce7;
+            --badge-checkin-text: #15803d;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 6px rgba(31, 22, 16, 0.04);
+            --shadow-md: 0 6px 20px rgba(31, 22, 16, 0.07);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header.admin-header {
+            background-color: var(--primary-dark);
+            color: #ffffff;
+            padding: 1.15rem 1.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold-accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .brand-monogram {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--gold-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            color: var(--gold-accent);
+            background: rgba(197, 155, 39, 0.1);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .brand-title h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.25rem;
+            letter-spacing: 1px;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .brand-title span {
+            font-size: 0.8rem;
+            color: var(--gold-light);
+            display: block;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold-accent) 0%, var(--gold-hover) 100%);
+            color: #ffffff;
+        }
+        .btn-gold:hover {
+            box-shadow: 0 4px 12px rgba(197, 155, 39, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-scanner {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            animation: pulse-glow 2.5s infinite;
+        }
+        .btn-scanner:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        }
+
+        .btn-outline-gold {
+            background: transparent;
+            color: var(--gold-light);
+            border: 1px solid var(--gold-accent);
+        }
+        .btn-outline-gold:hover {
+            background: rgba(197, 155, 39, 0.15);
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background: #e5ded3;
+            color: var(--text-dark);
+        }
+        .btn-secondary:hover {
+            background: #d8cfc2;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: #ffffff;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.7rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        /* Main Container */
+        .admin-main {
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.75rem 1.5rem;
+            flex: 1;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.15rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card.highlight {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.total { background: #f3f0e8; color: var(--primary-brown); }
+        .stat-icon.present { background: #dcfce7; color: #15803d; }
+        .stat-icon.notpresent { background: #ffe4e6; color: #be123c; }
+        .stat-icon.pending { background: #fef3c7; color: #b45309; }
+        .stat-icon.checkin { background: #dbeafe; color: #1e40af; }
+
+        .stat-info h3 {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+        }
+
+        .stat-info .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .stat-info .stat-sub {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+        }
+
+        /* Top Grid: Form & Settings */
+        .top-panels {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.15rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-brown);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title i {
+            color: var(--gold-accent);
+        }
+
+        /* Tabs */
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.15rem;
+            background: #f1ede6;
+            padding: 4px;
+            border-radius: var(--radius-md);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.65rem;
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: #ffffff;
+            color: var(--primary-brown);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.35rem;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.7rem 0.85rem;
+            font-size: 16px; /* Prevents auto-zoom on iOS */
+            font-family: inherit;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: #faf8f5;
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--gold-accent);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(197, 155, 39, 0.15);
+        }
+
+        .form-helper {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Table Panel */
+        .table-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a3998f;
+        }
+
+        .search-box input {
+            padding-left: 2.5rem;
+        }
+
+        /* Filter Chips Bar (Horizontal Scroll on Mobile) */
+        .filter-chips-bar {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .filter-chips-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            white-space: nowrap;
+            padding: 0.45rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #f3efe8;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .filter-chip.active {
+            background: var(--primary-dark);
+            color: #ffffff;
+            border-color: var(--gold-accent);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .filter-chip.active i {
+            color: var(--gold-light);
+        }
+
+        /* Desktop Table View */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table.guest-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        table.guest-table th {
+            text-align: left;
+            padding: 0.85rem 0.9rem;
+            background: #f7f4ee;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        table.guest-table td {
+            padding: 0.85rem 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        table.guest-table tr:hover {
+            background-color: #faf8f5;
+        }
+
+        .guest-name-cell {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .guest-name-cell .salutation {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.65rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-category {
+            background: #ede8df;
+            color: var(--primary-brown);
+        }
+
+        .badge-present {
+            background: var(--badge-present-bg);
+            color: var(--badge-present-text);
+        }
+
+        .badge-notpresent {
+            background: var(--badge-notpresent-bg);
+            color: var(--badge-notpresent-text);
+        }
+
+        .badge-pending {
+            background: var(--badge-pending-bg);
+            color: var(--badge-pending-text);
+        }
+
+        .badge-checkin {
+            background: var(--badge-checkin-bg);
+            color: var(--badge-checkin-text);
+            border: 1px solid #86efac;
+        }
+
+        /* Link Box in Table */
+        .link-copy-box {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #f3efe8;
+            padding: 0.35rem 0.6rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.76rem;
+            color: #4a4036;
+            max-width: 230px;
+        }
+
+        .link-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .btn-copy {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--primary-brown);
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-copy:hover {
+            background: var(--gold-accent);
+            color: #ffffff;
+            border-color: var(--gold-accent);
+        }
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+
+        /* Mobile Guest Cards View (Hidden on Desktop) */
+        .guest-cards-container {
+            display: none;
+        }
+
+        .mobile-guest-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.15rem;
+            box-shadow: 0 2px 8px rgba(31, 22, 16, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: transform 0.15s ease;
+        }
+
+        .mobile-guest-card.is-checked-in {
+            border-left: 5px solid #10b981;
+            background: #fbfdfc;
+        }
+
+        .mgc-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .mgc-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .mgc-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #e5ded3 0%, #d8cfc2 100%);
+            color: var(--primary-brown);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .mobile-guest-card.is-checked-in .mgc-avatar {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #15803d;
+            border-color: #86efac;
+        }
+
+        .mgc-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mgc-salutation {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .mgc-name {
+            font-size: 1.02rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.25;
+        }
+
+        .mgc-status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .mgc-quote {
+            background: #fbf8f3;
+            border-left: 3px solid var(--gold-accent);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.78rem;
+            color: #854d0e;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.4;
+        }
+
+        .mgc-link-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #f6f3ee;
+            padding: 0.45rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.76rem;
+            color: var(--text-muted);
+        }
+
+        .mgc-link-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: monospace;
+        }
+
+        .mgc-actions {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
+        }
+
+        .mgc-actions .btn {
+            min-height: 40px;
+        }
+
+        /* Mobile Bottom Nav Bar */
+        .mobile-bottom-nav {
+            display: none;
+        }
+
+        /* Footer */
+        footer.admin-footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            background: #ffffff;
+        }
+
+        /* Toast */
+        .toast-notify {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: var(--primary-dark);
+            color: #ffffff;
+            border-left: 4px solid var(--gold-accent);
+            padding: 0.9rem 1.4rem;
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 9999;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 0.88rem;
+        }
+
+        .toast-notify.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9000;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 520px;
+            padding: 1.75rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            font-size: 1.4rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .modal-close:hover {
+            color: var(--text-dark);
+            background: #f1ede6;
+        }
+
+        /* ==========================================
+           RESPONSIVE MOBILE BREAKPOINT (<= 768px)
+           ========================================== */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 75px; /* Leave space for bottom nav bar */
+            }
+
+            .admin-main {
+                padding: 1rem 0.85rem;
+            }
+
+            /* Compact Header */
+            header.admin-header {
+                padding: 0.85rem 1rem;
+            }
+            .brand-monogram {
+                width: 38px;
+                height: 38px;
+                font-size: 0.95rem;
+            }
+            .brand-title h1 {
+                font-size: 1.05rem;
+            }
+            .brand-title span {
+                font-size: 0.72rem;
+            }
+            .header-actions .btn {
+                padding: 0.45rem 0.75rem;
+                font-size: 0.78rem;
+            }
+
+            /* 2-Column Micro Stats Grid */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.65rem;
+                margin-bottom: 1.25rem;
+            }
+            .stat-card {
+                padding: 0.85rem;
+                border-radius: 12px;
+                gap: 0.75rem;
+            }
+            .stat-card.highlight {
+                grid-column: span 2; /* Check-in full width prominence */
+            }
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.15rem;
+                border-radius: 10px;
+            }
+            .stat-info .stat-number {
+                font-size: 1.35rem;
+            }
+            .stat-info h3 {
+                font-size: 0.72rem;
+            }
+            .stat-info .stat-sub {
+                font-size: 0.72rem;
+            }
+
+            /* Top Panels Stack */
+            .top-panels {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+            }
+            .card {
+                padding: 1.15rem;
+                border-radius: 14px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            /* Hide Desktop Table, Show Mobile Cards */
+            .table-responsive {
+                display: none !important;
+            }
+            .guest-cards-container {
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+            }
+
+            .table-panel {
+                padding: 1.15rem;
+                border-radius: 14px;
+            }
+
+            /* Floating Bottom Nav Bar */
+            .mobile-bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: var(--primary-dark);
+                border-top: 1px solid rgba(197, 155, 39, 0.4);
+                justify-content: space-around;
+                align-items: center;
+                padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+                z-index: 1000;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+            }
+
+            .mbn-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 3px;
+                color: #a3998f;
+                text-decoration: none;
+                font-size: 0.68rem;
+                font-weight: 600;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                padding: 0.35rem 0.6rem;
+                transition: color 0.15s ease;
+            }
+            .mbn-item.active,
+            .mbn-item:hover {
+                color: var(--gold-light);
+            }
+            .mbn-item i {
+                font-size: 1.15rem;
+            }
+
+            .mbn-scan-btn {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: #ffffff !important;
+                width: 54px;
+                height: 54px;
+                border-radius: 50%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin-top: -22px;
+                box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
+                border: 3px solid var(--primary-dark);
+            }
+            .mbn-scan-btn i {
+                font-size: 1.35rem;
+            }
+            .mbn-scan-btn span {
+                font-size: 0.55rem;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }
+
+            /* Fullscreen Mobile Scanner Modal */
+            .modal-overlay.active {
+                padding: 0;
+            }
+            #scanner-modal .modal-box {
+                width: 100%;
+                height: 100%;
+                max-width: 100%;
+                max-height: 100%;
+                border-radius: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+            }
+            #qr-reader {
+                flex: 1;
+                min-height: 280px;
+                max-height: 55vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="header-brand">
+            <div class="brand-monogram">TL</div>
+            <div class="brand-title">
+                <h1>Thomas & Lydia</h1>
+                <span>Manajemen Tamu & QR Check-in</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button onclick="openScannerModal()" class="btn btn-scanner">
+                <i class="fas fa-qrcode"></i> 📷 SCAN QR
+            </button>
+            <a href="/" target="_blank" class="btn btn-outline-gold" title="Lihat Tampilan Undangan">
+                <i class="fas fa-external-link-alt"></i> Undangan
+            </a>
+            <a href="/api/export" class="btn btn-gold" title="Download Data Tamu ke Excel">
+                <i class="fas fa-file-csv"></i> CSV
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+
+        <!-- Stat Cards (Responsive Micro-grid on Mobile) -->
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <div class="stat-icon checkin"><i class="fas fa-id-badge"></i></div>
+                <div class="stat-info">
+                    <h3>Hadir di Lokasi (QR)</h3>
+                    <div class="stat-number" id="stat-checkin" style="color:#15803d;">0</div>
+                    <div class="stat-sub" id="stat-checkin-pax">Total 0 Pax Check-in</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon total"><i class="fas fa-users"></i></div>
+                <div class="stat-info">
+                    <h3>Total Undangan</h3>
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-sub">Tamu terdaftar</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon present"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <h3>RSVP Hadir</h3>
+                    <div class="stat-number" id="stat-present">0</div>
+                    <div class="stat-sub" id="stat-pax">Total 0 Orang</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon notpresent"><i class="fas fa-times-circle"></i></div>
+                <div class="stat-info">
+                    <h3>Tidak Hadir</h3>
+                    <div class="stat-number" id="stat-notpresent">0</div>
+                    <div class="stat-sub">Konfirmasi berhalangan</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon pending"><i class="fas fa-hourglass-half"></i></div>
+                <div class="stat-info">
+                    <h3>Belum Respon</h3>
+                    <div class="stat-number" id="stat-pending">0</div>
+                    <div class="stat-sub">Menunggu konfirmasi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Input & Settings Panels -->
+        <div class="top-panels">
+            <!-- Add Guest Card -->
+            <div class="card" id="section-add-guest">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-user-plus"></i> Tambah Tamu & Buat Link
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab('single')">Satuan (1 Tamu)</button>
+                    <button class="tab-btn" onclick="switchTab('bulk')">Banyak Sekaligus (Bulk)</button>
+                </div>
+
+                <!-- Tab 1: Single Guest -->
+                <div id="tab-single" class="tab-content active">
+                    <form id="form-add-guest" onsubmit="handleAddGuest(event)">
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="guest-name">Nama Tamu / Penerima *</label>
+                                <input type="text" id="guest-name" placeholder="Contoh: Budi Santoso & Keluarga" required>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="guest-salutation">Sapaan</label>
+                                <select id="guest-salutation">
+                                    <option value="Bapak/Ibu/Saudara/i" selected>Bpk/Ibu/Sdr/i</option>
+                                    <option value="Bapak">Bapak</option>
+                                    <option value="Ibu">Ibu</option>
+                                    <option value="Saudara/i">Saudara/i</option>
+                                    <option value="Keluarga">Keluarga</option>
+                                    <option value="Sahabat">Sahabat</option>
+                                    <option value="Teman-teman">Teman-teman</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="guest-category">Kategori / Grup Tamu</label>
+                                <select id="guest-category">
+                                    <option value="Keluarga">Keluarga</option>
+                                    <option value="Sahabat & Teman">Sahabat & Teman</option>
+                                    <option value="Rekan Kerja">Rekan Kerja</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="Umum" selected>Umum</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="guest-phone">No. WhatsApp (Opsional)</label>
+                                <input type="tel" id="guest-phone" placeholder="081234567890">
+                                <div class="form-helper">Untuk langsung kirim via WhatsApp</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-gold" style="width: 100%; min-height: 46px; margin-top: 0.25rem;">
+                            <i class="fas fa-magic"></i> Simpan & Buat Link Undangan + QR
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Bulk Add -->
+                <div id="tab-bulk" class="tab-content">
+                    <form id="form-bulk-add" onsubmit="handleBulkAdd(event)">
+                        <div class="form-group">
+                            <label for="bulk-names">Daftar Nama Tamu (1 Nama Per Baris) *</label>
+                            <textarea id="bulk-names" rows="4" placeholder="Budi Santoso&#10;Dr. Hendra & Istri&#10;Siti Rahmawati, S.Pd.&#10;Keluarga Bpk. Joko" required></textarea>
+                            <div class="form-helper">Masukkan satu nama per baris (tekan Enter).</div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bulk-category">Kategori Default</label>
+                                <select id="bulk-category">
+                                    <option value="Keluarga">Keluarga</option>
+                                    <option value="Sahabat & Teman" selected>Sahabat & Teman</option>
+                                    <option value="Rekan Kerja">Rekan Kerja</option>
+                                    <option value="VIP">VIP</option>
+                                    <option value="Umum">Umum</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="bulk-salutation">Sapaan Default</label>
+                                <select id="bulk-salutation">
+                                    <option value="Bapak/Ibu/Saudara/i" selected>Bapak/Ibu/Saudara/i</option>
+                                    <option value="Bapak">Bapak</option>
+                                    <option value="Ibu">Ibu</option>
+                                    <option value="Saudara/i">Saudara/i</option>
+                                    <option value="Sahabat">Sahabat</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-gold" style="width: 100%; min-height: 46px; margin-top: 0.25rem;">
+                            <i class="fas fa-layer-group"></i> Generate Semua Link & QR Sekaligus
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings / Base URL & WA Template -->
+            <div class="card" id="section-settings">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-cog"></i> Pengaturan Link & WA
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="base-url">Domain / Base URL Undangan</label>
+                    <input type="text" id="base-url" value="" onchange="updateBaseUrl()">
+                    <div class="form-helper">Ubah jika di-upload ke domain online (contoh: https://thomaslydia.com)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="wa-template">Template Pesan WhatsApp</label>
+                    <textarea id="wa-template" rows="4" style="font-size: 0.8rem; line-height: 1.4;" onchange="saveTemplate()">Kepada Yth.
+{sapaan} {nama}
+
+Tanpa mengurangi rasa hormat, kami mengundang Anda untuk hadir di pernikahan kami:
+*Thomas & Lydia*
+
+Detail acara, lokasi, dan QR Code kehadiran dapat diakses melalui tautan berikut:
+{link}
+
+Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa restu. Terima kasih.</textarea>
+                    <div class="form-helper">Variabel: <code>{nama}</code>, <code>{sapaan}</code>, <code>{link}</code></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest List Panel -->
+        <div class="table-panel" id="section-guest-list">
+            <div class="table-controls">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Cari nama tamu, WhatsApp, kategori..." oninput="handleSearch()">
+                </div>
+
+                <!-- Touch-friendly Horizontal Filter Chips -->
+                <div class="filter-chips-bar">
+                    <button class="filter-chip active" onclick="setQuickFilter('all', this)">
+                        <i class="fas fa-list"></i> Semua (<span id="chip-count-all">0</span>)
+                    </button>
+                    <button class="filter-chip" onclick="setQuickFilter('checked_in', this)">
+                        <i class="fas fa-check-circle" style="color:#10b981;"></i> Sudah Check-in (<span id="chip-count-checkin">0</span>)
+                    </button>
+                    <button class="filter-chip" onclick="setQuickFilter('not_checked_in', this)">
+                        <i class="fas fa-clock" style="color:#f59e0b;"></i> Belum Check-in (<span id="chip-count-notcheckin">0</span>)
+                    </button>
+                    <button class="filter-chip" onclick="setQuickFilter('present', this)">
+                        <i class="fas fa-envelope-open-text"></i> RSVP Hadir (<span id="chip-count-present">0</span>)
+                    </button>
+                    <button class="filter-chip" onclick="setQuickFilter('notpresent', this)">
+                        <i class="fas fa-times-circle" style="color:#ef4444;"></i> Tidak Hadir
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. Desktop Table View (>= 769px) -->
+            <div class="table-responsive">
+                <table class="guest-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">No</th>
+                            <th>Nama Tamu</th>
+                            <th>Kategori</th>
+                            <th>WhatsApp</th>
+                            <th>Status Check-in (Lokasi)</th>
+                            <th>RSVP</th>
+                            <th>Link Undangan</th>
+                            <th style="text-align: right;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guest-table-body">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                <i class="fas fa-spinner fa-spin"></i> Memuat daftar tamu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. Mobile Cards View (<= 768px) -->
+            <div id="guest-cards-container" class="guest-cards-container">
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin"></i> Memuat data tamu...
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Mobile Floating Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+        <button class="mbn-item active" onclick="scrollToSection('section-guest-list', this)">
+            <i class="fas fa-users"></i>
+            <span>Tamu</span>
+        </button>
+        <button class="mbn-item" onclick="scrollToSection('section-add-guest', this)">
+            <i class="fas fa-user-plus"></i>
+            <span>Tambah</span>
+        </button>
+        <button class="mbn-item mbn-scan-btn" onclick="openScannerModal()" title="Buka Kamera Scan QR">
+            <i class="fas fa-qrcode"></i>
+            <span>SCAN</span>
+        </button>
+        <button class="mbn-item" onclick="scrollToSection('section-settings', this)">
+            <i class="fas fa-sliders-h"></i>
+            <span>Setting</span>
+        </button>
+        <a href="/" target="_blank" class="mbn-item">
+            <i class="fas fa-envelope-open-text"></i>
+            <span>Undangan</span>
+        </a>
+    </nav>
+
+    <!-- Footer -->
+    <footer class="admin-footer">
+        © 2026 Thomas & Lydia Wedding Invitation System.
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-notify">
+        <i class="fas fa-check-circle" style="color: var(--gold-light); font-size: 1.2rem;"></i>
+        <span id="toast-text">Tautan undangan berhasil disalin!</span>
+    </div>
+
+    <!-- QR Scanner Modal (Fullscreen on Mobile) -->
+    <div id="scanner-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--primary-brown);">
+                    <i class="fas fa-qrcode" style="color: #10b981;"></i> Scan QR Check-in
+                </h3>
+                <button class="modal-close" onclick="closeScannerModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+                Arahkan kamera ke QR Code tamu di undangan untuk mencatat kehadiran otomatis.
+            </p>
+
+            <!-- Video scanner viewport -->
+            <div id="qr-reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: #111;"></div>
+
+            <!-- Manual input fallback -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.85rem; margin-top: 0.85rem; text-align: left;">
+                <label style="font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+                    Input Manual (Nama Tamu / ID / Scanner USB)
+                </label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="manual-scan-input" placeholder="Ketik nama tamu atau scan barcode..." style="flex: 1;" onkeypress="if(event.key === 'Enter') handleManualScan()">
+                    <button class="btn btn-gold btn-sm" onclick="handleManualScan()">Check-in</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Guest Modal -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            <h3 style="font-family: 'Cinzel', serif; font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--primary-brown);">
+                <i class="fas fa-edit" style="color: var(--gold-accent);"></i> Edit Data Tamu
+            </h3>
+            <form id="form-edit-guest" onsubmit="handleSaveEdit(event)">
+                <input type="hidden" id="edit-id">
+                <div class="form-group">
+                    <label for="edit-name">Nama Tamu</label>
+                    <input type="text" id="edit-name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-salutation">Sapaan</label>
+                        <input type="text" id="edit-salutation">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-category">Kategori</label>
+                        <input type="text" id="edit-category">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-phone">No. WhatsApp</label>
+                        <input type="tel" id="edit-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-status">Status RSVP</label>
+                        <select id="edit-status">
+                            <option value="pending">Belum Konfirmasi</option>
+                            <option value="present">Hadir</option>
+                            <option value="notpresent">Tidak Hadir</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-pax">Jumlah Pax (Orang)</label>
+                        <input type="number" id="edit-pax" min="0" max="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-checkin">Status Check-in Lokasi</label>
+                        <select id="edit-checkin">
+                            <option value="false">Belum Check-in</option>
+                            <option value="true">Sudah Check-in</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-message">Ucapan / Pesan</label>
+                    <textarea id="edit-message" rows="2"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeEditModal()">Batal</button>
+                    <button type="submit" class="btn btn-gold" style="flex: 2;">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allGuests = [];
+        let filteredGuests = [];
+        let baseUrl = window.location.origin;
+        let html5QrCode = null;
+        let isProcessingScan = false;
+        let currentQuickFilter = 'all';
+
+        // Initialize Base URL
+        const savedBaseUrl = localStorage.getItem('ao_base_url');
+        if (savedBaseUrl) {
+            baseUrl = savedBaseUrl;
+        }
+        document.getElementById('base-url').value = baseUrl;
+
+        // Load saved WA template if any
+        const savedTemplate = localStorage.getItem('ao_wa_template');
+        if (savedTemplate) {
+            document.getElementById('wa-template').value = savedTemplate;
+        }
+
+        function updateBaseUrl() {
+            let val = document.getElementById('base-url').value.trim();
+            if (val.endsWith('/')) val = val.slice(0, -1);
+            baseUrl = val || window.location.origin;
+            localStorage.setItem('ao_base_url', baseUrl);
+            renderTable();
+            showToast('Base URL diperbarui!');
+        }
+
+        function saveTemplate() {
+            const val = document.getElementById('wa-template').value;
+            localStorage.setItem('ao_wa_template', val);
+            showToast('Template WhatsApp disimpan!');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (tab === 'single') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-single').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-bulk').classList.add('active');
+            }
+        }
+
+        function scrollToSection(sectionId, el) {
+            document.querySelectorAll('.mbn-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Audio Beep Feedback
+        function playSuccessBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.08); // A5
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch(e) {}
+        }
+
+        // Fetch guests from API
+        async function fetchGuests() {
+            try {
+                const res = await fetch('/api/guests');
+                const data = await res.json();
+                if (data.success) {
+                    allGuests = data.guests || [];
+                    updateStats(data.stats);
+                    updateChipCounters();
+                    handleFilter();
+                }
+            } catch (err) {
+                console.error('Gagal mengambil data:', err);
+                const errHtml = `<tr><td colspan="8" style="text-align:center;color:#ef4444;padding:2rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Gagal terhubung ke backend server.
+                </td></tr>`;
+                document.getElementById('guest-table-body').innerHTML = errHtml;
+                document.getElementById('guest-cards-container').innerHTML = `
+                    <div style="text-align:center;color:#ef4444;padding:2rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Gagal terhubung ke backend server.
+                    </div>
+                `;
+            }
+        }
+
+        function updateStats(stats) {
+            if (!stats) return;
+            document.getElementById('stat-total').textContent = stats.total || 0;
+            document.getElementById('stat-present').textContent = stats.present || 0;
+            document.getElementById('stat-notpresent').textContent = stats.notpresent || 0;
+            document.getElementById('stat-pending').textContent = stats.pending || 0;
+            document.getElementById('stat-pax').textContent = `Total ${stats.total_pax || 0} Orang`;
+            document.getElementById('stat-checkin').textContent = stats.checked_in || 0;
+            document.getElementById('stat-checkin-pax').textContent = `Total ${stats.checked_in_pax || 0} Pax di Lokasi`;
+        }
+
+        function updateChipCounters() {
+            const total = allGuests.length;
+            const checkin = allGuests.filter(g => g.checked_in).length;
+            const notcheckin = total - checkin;
+            const present = allGuests.filter(g => g.rsvp_status === 'present').length;
+
+            const elAll = document.getElementById('chip-count-all');
+            const elIn = document.getElementById('chip-count-checkin');
+            const elNot = document.getElementById('chip-count-notcheckin');
+            const elPres = document.getElementById('chip-count-present');
+
+            if (elAll) elAll.textContent = total;
+            if (elIn) elIn.textContent = checkin;
+            if (elNot) elNot.textContent = notcheckin;
+            if (elPres) elPres.textContent = present;
+        }
+
+        function generateLink(name, salutation, id) {
+            const encoded = encodeURIComponent(name);
+            let url = `${baseUrl}/?to=${encoded}`;
+            if (id) {
+                url += `&id=${encodeURIComponent(id)}`;
+            }
+            if (salutation && salutation !== 'Bapak/Ibu/Saudara/i' && salutation !== 'Bpk/Ibu/Sdr/i') {
+                url += `&s=${encodeURIComponent(salutation)}`;
+            }
+            return url;
+        }
+
+        function formatWaPhone(phone) {
+            if (!phone) return '';
+            let p = phone.replace(/[^0-9]/g, '');
+            if (p.startsWith('0')) {
+                p = '62' + p.substring(1);
+            }
+            return p;
+        }
+
+        function createWaUrl(guest) {
+            const rawPhone = formatWaPhone(guest.phone);
+            const template = document.getElementById('wa-template').value;
+            const link = generateLink(guest.name, guest.salutation, guest.id);
+            const text = template
+                .replace(/{nama}/g, guest.name)
+                .replace(/{sapaan}/g, guest.salutation || 'Bapak/Ibu/Saudara/i')
+                .replace(/{link}/g, link);
+
+            const encodedText = encodeURIComponent(text);
+            if (rawPhone) {
+                return `https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodedText}`;
+            } else {
+                return `https://api.whatsapp.com/send?text=${encodedText}`;
+            }
+        }
+
+        function setQuickFilter(type, el) {
+            currentQuickFilter = type;
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            if (el) el.classList.add('active');
+            handleFilter();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('guest-table-body');
+            const cardsContainer = document.getElementById('guest-cards-container');
+
+            if (filteredGuests.length === 0) {
+                const emptyHtml = `
+                    <div style="text-align:center;color:var(--text-muted);padding:2.5rem 1rem;">
+                        <i class="fas fa-inbox" style="font-size:2.2rem;margin-bottom:0.6rem;display:block;opacity:0.35;"></i>
+                        <p style="font-weight:600;font-size:0.95rem;">Tidak ada tamu ditemukan</p>
+                        <p style="font-size:0.8rem;margin-top:3px;">Coba ubah kata kunci pencarian atau filter.</p>
+                    </div>
+                `;
+                tbody.innerHTML = `<tr><td colspan="8">${emptyHtml}</td></tr>`;
+                cardsContainer.innerHTML = emptyHtml;
+                return;
+            }
+
+            let tableHtml = '';
+            let cardsHtml = '';
+
+            filteredGuests.forEach((g, idx) => {
+                const link = generateLink(g.name, g.salutation, g.id);
+                const waUrl = createWaUrl(g);
+
+                // RSVP Badge
+                let statusBadge = '';
+                if (g.rsvp_status === 'present') {
+                    statusBadge = `<span class="badge badge-present"><i class="fas fa-check-circle"></i> Hadir (${g.pax || 1} org)</span>`;
+                } else if (g.rsvp_status === 'notpresent') {
+                    statusBadge = `<span class="badge badge-notpresent"><i class="fas fa-times-circle"></i> Tidak Hadir</span>`;
+                } else {
+                    statusBadge = `<span class="badge badge-pending"><i class="fas fa-clock"></i> Belum Respon</span>`;
+                }
+
+                // Check-in Lokasi Badge & Action
+                let checkinDisplayDesktop = '';
+                let checkinDisplayMobile = '';
+                let checkinBtnMobile = '';
+
+                if (g.checked_in) {
+                    const timeShort = g.checkin_time ? g.checkin_time.split(' ')[1] : '✓';
+                    checkinDisplayDesktop = `
+                        <div style="display:flex;align-items:center;gap:4px;">
+                            <span class="badge badge-checkin"><i class="fas fa-check-circle"></i> Hadir (${timeShort})</span>
+                            <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="undoCheckin('${g.id}', '${escapeHtml(g.name)}')" title="Batalkan Check-in">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                    `;
+                    checkinDisplayMobile = `
+                        <span class="badge badge-checkin"><i class="fas fa-check-circle"></i> Check-in: ${g.checkin_time || 'Hadir'}</span>
+                    `;
+                    checkinBtnMobile = `
+                        <button class="btn btn-sm btn-secondary" onclick="undoCheckin('${g.id}', '${escapeHtml(g.name)}')" title="Batalkan Check-in">
+                            <i class="fas fa-undo"></i> Batalkan
+                        </button>
+                    `;
+                } else {
+                    checkinDisplayDesktop = `
+                        <button class="btn btn-sm btn-outline-gold" onclick="manualCheckin('${g.id}', '${escapeHtml(g.name)}')" title="Klik untuk Check-in tamu di lokasi">
+                            <i class="fas fa-id-badge"></i> Check-in
+                        </button>
+                    `;
+                    checkinDisplayMobile = `
+                        <span class="badge" style="background:#f3f4f6;color:#6b7280;"><i class="fas fa-clock"></i> Belum Check-in</span>
+                    `;
+                    checkinBtnMobile = `
+                        <button class="btn btn-sm btn-scanner" onclick="manualCheckin('${g.id}', '${escapeHtml(g.name)}')" style="flex:1;">
+                            <i class="fas fa-check"></i> Check-in
+                        </button>
+                    `;
+                }
+
+                const phoneDisplay = g.phone 
+                    ? `<a href="tel:${g.phone}" style="color:var(--primary-brown);text-decoration:none;"><i class="fab fa-whatsapp" style="color:#25d366;margin-right:4px;"></i>${g.phone}</a>` 
+                    : `<span style="color:#a3998f;font-style:italic;">-</span>`;
+
+                // 1. Build Desktop Table Row
+                tableHtml += `
+                    <tr>
+                        <td style="color:var(--text-muted);">${idx + 1}</td>
+                        <td>
+                            <div class="guest-name-cell">
+                                <span class="salutation">${escapeHtml(g.salutation || 'Bpk/Ibu/Sdr/i')}</span>
+                                <span>${escapeHtml(g.name)}</span>
+                                ${g.message ? `<span style="font-size:0.75rem;color:#854d0e;margin-top:2px;" title="${escapeHtml(g.message)}"><i class="fas fa-comment-dots"></i> "${escapeHtml(g.message.slice(0, 30))}${g.message.length > 30 ? '...' : ''}"</span>` : ''}
+                            </div>
+                        </td>
+                        <td><span class="badge badge-category">${escapeHtml(g.category || 'Umum')}</span></td>
+                        <td>${phoneDisplay}</td>
+                        <td>${checkinDisplayDesktop}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div class="link-copy-box">
+                                <span class="link-text" title="${link}">${link}</span>
+                                <button class="btn-copy" onclick="copyLink('${escapeHtml(link)}')" title="Salin Link">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-buttons" style="justify-content: flex-end;">
+                                <a href="${waUrl}" target="_blank" class="btn btn-sm btn-success" title="Kirim via WhatsApp">
+                                    <i class="fab fa-whatsapp"></i> WA
+                                </a>
+                                <a href="${link}" target="_blank" class="btn btn-sm btn-outline-gold" title="Buka Undangan Tamu Ini">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-sm btn-secondary" onclick="openEditModal('${g.id}')" title="Edit Tamu">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteGuest('${g.id}', '${escapeHtml(g.name)}')" title="Hapus Tamu">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // 2. Build Mobile Guest Card
+                const initials = (g.name || 'TU').trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                cardsHtml += `
+                    <div class="mobile-guest-card ${g.checked_in ? 'is-checked-in' : ''}">
+                        <div class="mgc-top">
+                            <div class="mgc-user">
+                                <div class="mgc-avatar">${initials}</div>
+                                <div class="mgc-info">
+                                    <span class="mgc-salutation">${escapeHtml(g.salutation || 'Bpk/Ibu/Sdr/i')}</span>
+                                    <h4 class="mgc-name">${escapeHtml(g.name)}</h4>
+                                </div>
+                            </div>
+                            <span class="badge badge-category">${escapeHtml(g.category || 'Umum')}</span>
+                        </div>
+
+                        <div class="mgc-status-row">
+                            ${checkinDisplayMobile}
+                            ${statusBadge}
+                            ${g.phone ? `<a href="tel:${g.phone}" class="badge" style="background:#f0f9ff;color:#0284c7;text-decoration:none;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> ${g.phone}</a>` : ''}
+                        </div>
+
+                        ${g.message ? `
+                            <div class="mgc-quote">
+                                <i class="fas fa-quote-left" style="opacity:0.6;margin-right:3px;"></i> "${escapeHtml(g.message)}"
+                            </div>
+                        ` : ''}
+
+                        <div class="mgc-link-row">
+                            <span class="mgc-link-text">${link}</span>
+                            <button class="btn btn-sm btn-outline-gold" style="padding:2px 8px;font-size:0.74rem;" onclick="copyLink('${escapeHtml(link)}')" title="Salin Link">
+                                <i class="fas fa-copy"></i> Salin
+                            </button>
+                        </div>
+
+                        <div class="mgc-actions">
+                            ${checkinBtnMobile}
+                            <a href="${waUrl}" target="_blank" class="btn btn-sm btn-success" style="flex:1;">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                            <a href="${link}" target="_blank" class="btn btn-sm btn-outline-gold" title="Buka Undangan">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button class="btn btn-sm btn-secondary" onclick="openEditModal('${g.id}')" title="Edit Tamu">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteGuest('${g.id}', '${escapeHtml(g.name)}')" title="Hapus Tamu">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tbody.innerHTML = tableHtml;
+            cardsContainer.innerHTML = cardsHtml;
+        }
+
+        function handleFilter() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+
+            filteredGuests = allGuests.filter(g => {
+                const matchQuery = !query || 
+                    (g.name && g.name.toLowerCase().includes(query)) ||
+                    (g.phone && g.phone.toLowerCase().includes(query)) ||
+                    (g.category && g.category.toLowerCase().includes(query));
+
+                let matchQuick = true;
+                if (currentQuickFilter === 'checked_in') {
+                    matchQuick = Boolean(g.checked_in);
+                } else if (currentQuickFilter === 'not_checked_in') {
+                    matchQuick = !g.checked_in;
+                } else if (currentQuickFilter === 'present') {
+                    matchQuick = g.rsvp_status === 'present';
+                } else if (currentQuickFilter === 'notpresent') {
+                    matchQuick = g.rsvp_status === 'notpresent';
+                }
+
+                return matchQuery && matchQuick;
+            });
+
+            renderTable();
+        }
+
+        function handleSearch() {
+            handleFilter();
+        }
+
+        // ==========================================
+        // QR SCANNER ENGINE
+        // ==========================================
+        function openScannerModal() {
+            document.getElementById('scanner-modal').classList.add('active');
+            setTimeout(startCameraScanner, 250);
+        }
+
+        function closeScannerModal() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    document.getElementById('scanner-modal').classList.remove('active');
+                }).catch(() => {
+                    document.getElementById('scanner-modal').classList.remove('active');
+                });
+            } else {
+                document.getElementById('scanner-modal').classList.remove('active');
+            }
+        }
+
+        function startCameraScanner() {
+            if (typeof Html5Qrcode === 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pustaka pemindai QR sedang dimuat, silakan coba lagi dalam beberapa detik.' });
+                return;
+            }
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+            
+            const config = { fps: 12, qrbox: { width: 220, height: 220 } };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                (errorMessage) => { /* ignore frame errors */ }
+            ).catch(err => {
+                console.warn("Camera start error, trying default camera:", err);
+                Html5Qrcode.getCameras().then(devices => {
+                    if (devices && devices.length) {
+                        const cameraId = devices[devices.length - 1].id;
+                        html5QrCode.start(cameraId, config, onScanSuccess);
+                    }
+                }).catch(camErr => {
+                    document.getElementById('qr-reader').innerHTML = `
+                        <div style="padding: 2.5rem 1rem; color: #ef4444; font-size: 0.85rem; text-align: center;">
+                            <i class="fas fa-video-slash" style="font-size: 2rem; margin-bottom: 0.5rem; display:block;"></i>
+                            Kamera tidak aktif atau izin ditolak.<br>Silakan gunakan input manual di bawah.
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (isProcessingScan) return;
+            isProcessingScan = true;
+
+            playSuccessBeep();
+
+            try {
+                const res = await fetch('/api/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: decodedText })
+                });
+                const data = await res.json();
+
+                if (data.success && data.guest) {
+                    const g = data.guest;
+                    fetchGuests();
+
+                    if (data.already_checked_in) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Sudah Check-In',
+                            html: `
+                                <div style="text-align: left; background: #f8f6f2; padding: 1rem; border-radius: 10px; margin-top: 10px;">
+                                    <p><strong>Nama:</strong> ${escapeHtml(g.name)}</p>
+                                    <p><strong>Kategori:</strong> ${escapeHtml(g.category || 'Umum')}</p>
+                                    <p><strong>Pax:</strong> ${g.pax || 1} Orang</p>
+                                    <p><strong>Waktu Check-in:</strong> ${g.checkin_time}</p>
+                                </div>
+                                <p style="margin-top: 10px; color: #d97706; font-size: 0.85rem;">Tamu ini sudah tercatat check-in sebelumnya.</p>
+                            `,
+                            confirmButtonColor: '#c59b27'
+                        }).then(() => {
+                            setTimeout(() => { isProcessingScan = false; }, 1500);
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Check-in Berhasil! 🎉',
+                            html: `
+                                <div style="text-align: left; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 10px; margin-top: 10px;">
+                                    <p style="font-size: 1.15rem; font-weight: 700; color: #065f46; margin-bottom: 6px;">${escapeHtml(g.name)}</p>
+                                    <p><strong>Sapaan:</strong> ${escapeHtml(g.salutation || '-')}</p>
+                                    <p><strong>Kategori:</strong> ${escapeHtml(g.category || 'Umum')}</p>
+                                    <p><strong>Jumlah Tamu:</strong> ${g.pax || 1} Orang</p>
+                                    <p><strong>Waktu Check-in:</strong> ${g.checkin_time}</p>
+                                </div>
+                            `,
+                            confirmButtonColor: '#10b981'
+                        }).then(() => {
+                            setTimeout(() => { isProcessingScan = false; }, 1500);
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Check-in Gagal',
+                        text: data.message || 'QR Code tidak terdaftar.'
+                    }).then(() => {
+                        setTimeout(() => { isProcessingScan = false; }, 1500);
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal memproses check-in.' }).then(() => {
+                    setTimeout(() => { isProcessingScan = false; }, 1500);
+                });
+            }
+        }
+
+        async function handleManualScan() {
+            const input = document.getElementById('manual-scan-input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            input.value = '';
+            onScanSuccess(val);
+        }
+
+        async function manualCheckin(guestId, guestName) {
+            playSuccessBeep();
+            try {
+                const res = await fetch('/api/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: guestId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Check-in untuk '${guestName}' berhasil!`);
+                    fetchGuests();
+                }
+            } catch(err) {
+                console.error(err);
+            }
+        }
+
+        async function undoCheckin(guestId, guestName) {
+            const confirm = await Swal.fire({
+                title: 'Batalkan Check-in?',
+                text: `Apakah Anda ingin membatalkan status check-in untuk '${guestName}'?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b635b',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Tutup'
+            });
+
+            if (confirm.isConfirmed) {
+                try {
+                    const res = await fetch('/api/undo-checkin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: guestId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`Status check-in '${guestName}' telah dibatalkan.`);
+                        fetchGuests();
+                    }
+                } catch(err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        // Add Single Guest
+        async function handleAddGuest(e) {
+            e.preventDefault();
+            const name = document.getElementById('guest-name').value.trim();
+            const salutation = document.getElementById('guest-salutation').value;
+            const category = document.getElementById('guest-category').value;
+            const phone = document.getElementById('guest-phone').value.trim();
+
+            if (!name) return;
+
+            try {
+                const res = await fetch('/api/guests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, salutation, category, phone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Tamu '${name}' berhasil ditambahkan!`);
+                    document.getElementById('guest-name').value = '';
+                    document.getElementById('guest-phone').value = '';
+                    fetchGuests();
+                    scrollToSection('section-guest-list');
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: data.message });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menambahkan tamu.' });
+            }
+        }
+
+        // Bulk Add
+        async function handleBulkAdd(e) {
+            e.preventDefault();
+            const text = document.getElementById('bulk-names').value.trim();
+            const category = document.getElementById('bulk-category').value;
+            const salutation = document.getElementById('bulk-salutation').value;
+
+            if (!text) return;
+
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            if (lines.length === 0) return;
+
+            try {
+                const res = await fetch('/api/guests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bulk: true,
+                        names: lines,
+                        category: category,
+                        salutation: salutation
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: `${data.count} tamu dan tautan undangan telah dibuat.`
+                    });
+                    document.getElementById('bulk-names').value = '';
+                    switchTab('single');
+                    fetchGuests();
+                    scrollToSection('section-guest-list');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menambahkan tamu massal.' });
+            }
+        }
+
+        // Edit Guest
+        function openEditModal(guestId) {
+            const guest = allGuests.find(g => g.id === guestId);
+            if (!guest) return;
+
+            document.getElementById('edit-id').value = guest.id;
+            document.getElementById('edit-name').value = guest.name || '';
+            document.getElementById('edit-salutation').value = guest.salutation || 'Bpk/Ibu/Sdr/i';
+            document.getElementById('edit-category').value = guest.category || 'Umum';
+            document.getElementById('edit-phone').value = guest.phone || '';
+            document.getElementById('edit-status').value = guest.rsvp_status || 'pending';
+            document.getElementById('edit-pax').value = guest.pax || 0;
+            document.getElementById('edit-checkin').value = guest.checked_in ? 'true' : 'false';
+            document.getElementById('edit-message').value = guest.message || '';
+
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+
+        async function handleSaveEdit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const name = document.getElementById('edit-name').value.trim();
+            const salutation = document.getElementById('edit-salutation').value.trim();
+            const category = document.getElementById('edit-category').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+            const rsvp_status = document.getElementById('edit-status').value;
+            const pax = parseInt(document.getElementById('edit-pax').value || 0);
+            const checked_in = document.getElementById('edit-checkin').value === 'true';
+            const message = document.getElementById('edit-message').value.trim();
+
+            try {
+                const res = await fetch('/api/guests', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name, salutation, category, phone, rsvp_status, pax, checked_in, message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeEditModal();
+                    showToast('Data tamu berhasil diperbarui!');
+                    fetchGuests();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: data.message });
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menyimpan perubahan.' });
+            }
+        }
+
+        // Delete Guest
+        async function deleteGuest(id, name) {
+            const confirm = await Swal.fire({
+                title: 'Hapus Tamu?',
+                text: `Apakah Anda yakin ingin menghapus '${name}' dari daftar undangan?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b635b',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+
+            if (confirm.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/guests?id=${encodeURIComponent(id)}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`Tamu '${name}' telah dihapus.`);
+                        fetchGuests();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menghapus tamu.' });
+                }
+            }
+        }
+
+        // Copy Link
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Tautan undangan berhasil disalin!');
+            }).catch(() => {
+                const temp = document.createElement('textarea');
+                temp.value = url;
+                document.body.appendChild(temp);
+                temp.select();
+                document.execCommand('copy');
+                document.body.removeChild(temp);
+                showToast('Tautan undangan berhasil disalin!');
+            });
+        }
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Initial Load
+        fetchGuests();
+    </script>
+</body>
+</html>
