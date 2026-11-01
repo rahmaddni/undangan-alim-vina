@@ -1,0 +1,156 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This security rules file assumes the following data structures:
+//
+// Collection: guests
+// Document ID: {guestId} (e.g., gst_1, gst_5e25a03c)
+// Fields:
+//   - id: string (optional/recommended, 1..100 chars, immutable on update) - Unique guest identifier
+//   - name: string (required, 1..200 chars) - Full name of the invited wedding guest
+//   - salutation: string (optional, 0..100 chars) - Honorific/title (e.g., Bapak/Ibu/Saudara/i)
+//   - phone: string (optional, 0..50 chars) - Guest phone/WhatsApp number
+//   - category: string (optional, 0..100 chars) - Guest group/category (e.g., Keluarga, VIP, Umum)
+//   - rsvp_status: string (optional, enum: ['present', 'notpresent', 'pending']) - Attendance status
+//   - pax: number (optional, 0..100) - Number of attending guests
+//   - message: string (optional, 0..2000 chars) - Wedding wishes / congratulatory message
+//   - checked_in: bool (optional) - Whether the guest has checked in at the venue
+//   - checkin_time: string or null (optional, 0..100 chars) - Timestamp string of venue check-in
+//   - created_at: string (optional, 0..100 chars) - Creation timestamp string
+//   - updated_at: string (optional, 0..100 chars) - Last update timestamp string
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if user owns the resource (for user-owned documents)
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is owner based on document's uid field
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    // Verify UID hasn't been tampered with on create
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    // Ensure uid field is not modified on update
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    // Validate required fields exist
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate string length
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    // Validate optional string (if present, must be string and within length)
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen);
+    }
+
+    // Validate optional nullable string (if present, must be null or string within length)
+    function isValidOptionalNullableString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        request.resource.data[field] == null ||
+        (request.resource.data[field] is string &&
+         request.resource.data[field].size() >= minLen &&
+         request.resource.data[field].size() <= maxLen);
+    }
+
+    // Validate that the document contains only the allowed fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that immutable fields have not changed on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators (Used in BOTH create and update)
+    // ===============================================================
+
+    function isValidGuest(data) {
+      return hasOnlyAllowedFields([
+          'id',
+          'name',
+          'salutation',
+          'phone',
+          'category',
+          'rsvp_status',
+          'pax',
+          'message',
+          'checked_in',
+          'checkin_time',
+          'created_at',
+          'updated_at'
+        ]) &&
+        hasRequiredFields(['name']) &&
+        validStringLength('name', 1, 200) &&
+        isValidOptionalString('id', 1, 100) &&
+        isValidOptionalString('salutation', 0, 100) &&
+        isValidOptionalString('phone', 0, 50) &&
+        isValidOptionalString('category', 0, 100) &&
+        (!('rsvp_status' in data) || data.rsvp_status in ['present', 'notpresent', 'pending']) &&
+        (!('pax' in data) || (data.pax is number && data.pax >= 0 && data.pax <= 100)) &&
+        isValidOptionalString('message', 0, 2000) &&
+        (!('checked_in' in data) || data.checked_in is bool) &&
+        isValidOptionalNullableString('checkin_time', 0, 100) &&
+        isValidOptionalString('created_at', 0, 100) &&
+        isValidOptionalString('updated_at', 0, 100);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Wedding invitation guests collection:
+    // Explicitly allows unauthenticated read/write for frictionless guest RSVP,
+    // QR check-in scanning, and guest list management, subject to strict schema
+    // and size validation on every create and update.
+    match /guests/{guestId} {
+      allow read: if true;
+      allow create: if isValidGuest(request.resource.data);
+      allow update: if isValidGuest(request.resource.data) &&
+        (!('id' in resource.data) || request.resource.data.id == resource.data.id) &&
+        (!('created_at' in resource.data) || request.resource.data.created_at == resource.data.created_at);
+      allow delete: if true;
+    }
+
+    // Default deny for all other collections and documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

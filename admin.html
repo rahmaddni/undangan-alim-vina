@@ -1384,6 +1384,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
         </div>
     </div>
 
+    <script src="/firebase-backend.js"></script>
     <script>
         let allGuests = [];
         let filteredGuests = [];
@@ -1394,8 +1395,11 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
 
         // Initialize Base URL
         const savedBaseUrl = localStorage.getItem('ao_base_url');
-        if (savedBaseUrl) {
+        if (savedBaseUrl && !(savedBaseUrl.includes('localhost') && !window.location.hostname.includes('localhost'))) {
             baseUrl = savedBaseUrl;
+        } else {
+            baseUrl = window.location.origin;
+            localStorage.setItem('ao_base_url', baseUrl);
         }
         document.getElementById('base-url').value = baseUrl;
 
