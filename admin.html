@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Admin Dashboard & QR Check-in - Thomas & Lydia Wedding</title>
+    <title>Admin Dashboard & QR Check-in - Alim & Vina Wedding</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -997,9 +997,9 @@
     <!-- Header -->
     <header class="admin-header">
         <div class="header-brand">
-            <div class="brand-monogram">TL</div>
+            <div class="brand-monogram">AV</div>
             <div class="brand-title">
-                <h1>Thomas & Lydia</h1>
+                <h1>Alim & Vina</h1>
                 <span>Manajemen Tamu & QR Check-in</span>
             </div>
         </div>
@@ -1175,7 +1175,7 @@
                 <div class="form-group">
                     <label for="base-url">Domain / Base URL Undangan</label>
                     <input type="text" id="base-url" value="" onchange="updateBaseUrl()">
-                    <div class="form-helper">Ubah jika di-upload ke domain online (contoh: https://thomaslydia.com)</div>
+                    <div class="form-helper">Ubah jika di-upload ke domain online (contoh: https://undangan-alim-vina.web.app)</div>
                 </div>
 
                 <div class="form-group">
@@ -1184,7 +1184,7 @@
 {sapaan} {nama}
 
 Tanpa mengurangi rasa hormat, kami mengundang Anda untuk hadir di pernikahan kami:
-*Thomas & Lydia*
+*Alim & Vina*
 
 Detail acara, lokasi, dan QR Code kehadiran dapat diakses melalui tautan berikut:
 {link}
@@ -1284,7 +1284,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
 
     <!-- Footer -->
     <footer class="admin-footer">
-        © 2026 Thomas & Lydia Wedding Invitation System.
+        © 2026 Alim & Vina Wedding Invitation System.
     </footer>
 
     <!-- Toast Notification -->
@@ -1406,7 +1406,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
         // Load saved WA template if any
         const savedTemplate = localStorage.getItem('ao_wa_template');
         if (savedTemplate) {
-            document.getElementById('wa-template').value = savedTemplate;
+            document.getElementById('wa-template').value = savedTemplate.replace(/Thomas & Lydia/g, 'Alim & Vina');
         }
 
         function updateBaseUrl() {

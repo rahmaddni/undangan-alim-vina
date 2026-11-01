@@ -131,7 +131,7 @@
     // 2. COUNTDOWN TIMER ENGINE (Supports Split Widgets)
     // ==========================================
     function initCountdown() {
-        const targetDate = new Date("2026-12-31T08:00:00").getTime();
+        const targetDate = new Date("2026-12-12T15:30:00+07:00").getTime();
         const countdownLists = document.querySelectorAll(".wpkoi-elements-countdown-items");
         if (!countdownLists.length) return;
 
