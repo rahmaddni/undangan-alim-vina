@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "public": ".",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "server.py",
+      "README.md",
+      "edge-temp/**",
+      "__pycache__/**",
+      "screenshot*.png"
+    ]
+  }
+}
