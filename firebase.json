@@ -20,6 +20,17 @@
       "edge-temp/**",
       "__pycache__/**",
       "screenshot*.png"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
     ]
   }
 }

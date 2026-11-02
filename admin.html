@@ -1392,7 +1392,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
         </div>
     </div>
 
-    <script src="/firebase-backend.js"></script>
+    <script src="/firebase-backend.js?v=20261103_2"></script>
     <script>
         let allGuests = [];
         let filteredGuests = [];
@@ -1853,6 +1853,38 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
             paxInput.value = val;
         };
 
+        function extractGuestFromQrText(rawCode) {
+            let guestId = '';
+            let guestName = '';
+            const raw = String(rawCode || '').trim();
+            if (!raw) return { guestId: '', guestName: 'Tamu Undangan' };
+
+            if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/') || raw.includes('?')) {
+                try {
+                    const parsedUrl = new URL(raw, window.location.origin);
+                    if (parsedUrl.searchParams.get('id')) {
+                        guestId = parsedUrl.searchParams.get('id').trim();
+                    }
+                    const nameKeys = ['name', 'to', 'dear', 'kepada', 'u', 'guest', 'nama'];
+                    for (const k of nameKeys) {
+                        const val = parsedUrl.searchParams.get(k);
+                        if (val && val.trim()) {
+                            guestName = val.trim();
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    guestName = raw;
+                }
+            } else if (raw.startsWith('gst_')) {
+                guestId = raw;
+            } else {
+                guestName = raw;
+            }
+
+            return { guestId, guestName };
+        }
+
         async function onScanSuccess(decodedText) {
             if (isProcessingScan) return;
             isProcessingScan = true;
@@ -1870,23 +1902,42 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
             }
 
             try {
-                // 1) Look up guest data from scanned QR code first without auto-checking in
-                const statusRes = await fetch(`/api/checkin/status?code=${encodeURIComponent(decodedText)}`);
-                const statusData = await statusRes.json();
+                const parsed = extractGuestFromQrText(decodedText);
 
-                if (!statusData.success || !statusData.guest) {
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'QR Code Tidak Dikenali',
-                        text: statusData.message || 'Data tamu tidak ditemukan dalam QR Code ini.',
-                        confirmButtonText: 'Scan Ulang',
-                        confirmButtonColor: '#c59b27'
-                    });
-                    resumeScannerIfNeeded();
-                    return;
+                // Find in local allGuests list first
+                let matchedGuest = null;
+                if (parsed.guestId) {
+                    matchedGuest = allGuests.find(item => item.id === parsed.guestId);
+                }
+                if (!matchedGuest && parsed.guestName) {
+                    matchedGuest = allGuests.find(
+                        item => String(item.name || '').trim().toLowerCase() === parsed.guestName.toLowerCase()
+                    );
                 }
 
-                const g = statusData.guest;
+                // Also query backend status endpoint (passing id, name, and code for full compatibility)
+                try {
+                    const statusRes = await fetch(
+                        `/api/checkin/status?id=${encodeURIComponent(parsed.guestId || '')}&name=${encodeURIComponent(parsed.guestName || '')}&code=${encodeURIComponent(decodedText)}`
+                    );
+                    const statusData = await statusRes.json();
+                    if (statusData && statusData.success && statusData.guest) {
+                        matchedGuest = statusData.guest;
+                    }
+                } catch (e) {}
+
+                // Construct guest object even if guest was not pre-registered in database
+                const g = matchedGuest || {
+                    id: parsed.guestId || '',
+                    name: parsed.guestName || 'Tamu Undangan',
+                    salutation: 'Bapak/Ibu/Saudara/i',
+                    category: 'Tamu Undangan',
+                    rsvp_status: 'pending',
+                    pax: 1,
+                    checked_in: false,
+                    checkin_time: null
+                };
+
                 const isGenericName = !g.name || g.name === 'Tamu Undangan' || g.name === 'Nama Tamu';
                 const initialPax = Math.max(parseInt(g.pax, 10) || 1, 1);
                 const statusBadgeHtml = g.checked_in
@@ -1897,7 +1948,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                            <i class="fas fa-qrcode"></i> QR Terdeteksi • Siap Check-in
                        </div>`;
 
-                // 2) Show Guest Name & Confirmation Modal
+                // Show Guest Name & Confirmation Modal
                 const confirmResult = await Swal.fire({
                     title: 'Konfirmasi Kehadiran Tamu',
                     html: `
@@ -1909,8 +1960,8 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                                 </div>
                                 ${isGenericName ? `
                                     <div style="margin: 6px 0;">
-                                        <input type="text" id="swal-scan-name" value="${escapeHtml(g.name || '')}" placeholder="Ketik Nama Tamu..." style="width:100%;padding:9px 12px;border:1.5px solid #c59b27;border-radius:8px;font-size:1.05rem;font-weight:700;text-align:center;color:#1f1610;">
-                                        <small style="display:block;font-size:0.72rem;color:#6b635b;margin-top:4px;">Silakan isi/sesuaikan nama tamu jika diperlukan</small>
+                                        <input type="text" id="swal-scan-name" value="${escapeHtml(g.name || 'Tamu Undangan')}" placeholder="Ketik Nama Tamu..." style="width:100%;padding:9px 12px;border:1.5px solid #c59b27;border-radius:8px;font-size:1.05rem;font-weight:700;text-align:center;color:#1f1610;">
+                                        <small style="display:block;font-size:0.72rem;color:#6b635b;margin-top:4px;">Nama tamu dapat disesuaikan sebelum konfirmasi</small>
                                     </div>
                                 ` : `
                                     <div style="font-size: 1.35rem; font-weight: 800; color: #1f1610; line-height: 1.25; margin: 4px 0 6px;">
@@ -1962,15 +2013,15 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                     return;
                 }
 
-                // 3) Save confirmed attendance via POST /api/checkin
+                // Save confirmed attendance via POST /api/checkin
                 const res = await fetch('/api/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: g.id || '',
+                        id: g.id || parsed.guestId || '',
                         name: confirmResult.value.name,
                         pax: confirmResult.value.pax,
-                        code: decodedText
+                        code: `?name=${encodeURIComponent(confirmResult.value.name)}&id=${encodeURIComponent(g.id || parsed.guestId || '')}`
                     })
                 });
                 const data = await res.json();
