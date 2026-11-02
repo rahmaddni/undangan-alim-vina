@@ -754,7 +754,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            z-index: 9999;
+            z-index: 100000 !important;
             transform: translateY(100px);
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -764,6 +764,11 @@
         .toast-notify.show {
             transform: translateY(0);
             opacity: 1;
+        }
+
+        /* Ensure SweetAlert2 confirmation dialogs always appear above fullscreen #scanner-modal (z-index: 9000) */
+        .swal2-container {
+            z-index: 99999 !important;
         }
 
         /* Modal Overlay */
@@ -1774,11 +1779,13 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
         // QR SCANNER ENGINE
         // ==========================================
         function openScannerModal() {
+            isProcessingScan = false;
             document.getElementById('scanner-modal').classList.add('active');
             setTimeout(startCameraScanner, 250);
         }
 
         function closeScannerModal() {
+            isProcessingScan = false;
             if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().then(() => {
                     html5QrCode.clear();
@@ -1791,16 +1798,29 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
             }
         }
 
+        function resumeScannerIfNeeded() {
+            isProcessingScan = false;
+            if (html5QrCode && html5QrCode.isScanning) {
+                try {
+                    html5QrCode.resume();
+                } catch (e) {}
+            }
+        }
+
         function startCameraScanner() {
             if (typeof Html5Qrcode === 'undefined') {
                 Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pustaka pemindai QR sedang dimuat, silakan coba lagi dalam beberapa detik.' });
+                return;
+            }
+            if (html5QrCode && html5QrCode.isScanning) {
+                resumeScannerIfNeeded();
                 return;
             }
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("qr-reader");
             }
             
-            const config = { fps: 12, qrbox: { width: 220, height: 220 } };
+            const config = { fps: 15, qrbox: { width: 230, height: 230 } };
             
             html5QrCode.start(
                 { facingMode: "environment" },
@@ -1825,73 +1845,176 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
             });
         }
 
+        window.adjustScanPax = function(delta) {
+            const paxInput = document.getElementById('swal-scan-pax');
+            if (!paxInput) return;
+            let val = parseInt(paxInput.value, 10) || 1;
+            val = Math.min(10, Math.max(1, val + delta));
+            paxInput.value = val;
+        };
+
         async function onScanSuccess(decodedText) {
             if (isProcessingScan) return;
             isProcessingScan = true;
 
             playSuccessBeep();
+            if (navigator.vibrate) {
+                try { navigator.vibrate(120); } catch (e) {}
+            }
+
+            // Pause camera while showing confirmation popup so frame stops flashing green
+            if (html5QrCode && html5QrCode.isScanning) {
+                try {
+                    html5QrCode.pause(true);
+                } catch (e) {}
+            }
 
             try {
+                // 1) Look up guest data from scanned QR code first without auto-checking in
+                const statusRes = await fetch(`/api/checkin/status?code=${encodeURIComponent(decodedText)}`);
+                const statusData = await statusRes.json();
+
+                if (!statusData.success || !statusData.guest) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'QR Code Tidak Dikenali',
+                        text: statusData.message || 'Data tamu tidak ditemukan dalam QR Code ini.',
+                        confirmButtonText: 'Scan Ulang',
+                        confirmButtonColor: '#c59b27'
+                    });
+                    resumeScannerIfNeeded();
+                    return;
+                }
+
+                const g = statusData.guest;
+                const isGenericName = !g.name || g.name === 'Tamu Undangan' || g.name === 'Nama Tamu';
+                const initialPax = Math.max(parseInt(g.pax, 10) || 1, 1);
+                const statusBadgeHtml = g.checked_in
+                    ? `<div style="display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:5px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;margin-bottom:10px;">
+                           <i class="fas fa-info-circle"></i> Sudah Check-in (${escapeHtml(g.checkin_time || 'Sebelumnya')})
+                       </div>`
+                    : `<div style="display:inline-flex;align-items:center;gap:6px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:5px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;margin-bottom:10px;">
+                           <i class="fas fa-qrcode"></i> QR Terdeteksi • Siap Check-in
+                       </div>`;
+
+                // 2) Show Guest Name & Confirmation Modal
+                const confirmResult = await Swal.fire({
+                    title: 'Konfirmasi Kehadiran Tamu',
+                    html: `
+                        <div style="text-align: center; margin-top: 4px;">
+                            ${statusBadgeHtml}
+                            <div style="background: #faf8f5; border: 2px solid #e5ded3; border-radius: 14px; padding: 14px 12px; margin-bottom: 12px;">
+                                <div style="font-size: 0.78rem; color: #6b635b; margin-bottom: 4px;">
+                                    Kepada Yth. ${escapeHtml(g.salutation || 'Bapak/Ibu/Saudara/i')}
+                                </div>
+                                ${isGenericName ? `
+                                    <div style="margin: 6px 0;">
+                                        <input type="text" id="swal-scan-name" value="${escapeHtml(g.name || '')}" placeholder="Ketik Nama Tamu..." style="width:100%;padding:9px 12px;border:1.5px solid #c59b27;border-radius:8px;font-size:1.05rem;font-weight:700;text-align:center;color:#1f1610;">
+                                        <small style="display:block;font-size:0.72rem;color:#6b635b;margin-top:4px;">Silakan isi/sesuaikan nama tamu jika diperlukan</small>
+                                    </div>
+                                ` : `
+                                    <div style="font-size: 1.35rem; font-weight: 800; color: #1f1610; line-height: 1.25; margin: 4px 0 6px;">
+                                        ${escapeHtml(g.name)}
+                                    </div>
+                                    <input type="hidden" id="swal-scan-name" value="${escapeHtml(g.name)}">
+                                `}
+                                <div style="font-size: 0.8rem; color: #6b635b; margin-top: 4px;">
+                                    <span style="background:#f1ede6;padding:3px 10px;border-radius:12px;font-weight:600;color:#38281d;">
+                                        <i class="fas fa-tag" style="color:#c59b27;margin-right:4px;"></i>${escapeHtml(g.category || 'Umum')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style="background: #ffffff; border: 1px solid #e5ded3; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+                                <span style="font-size: 0.85rem; font-weight: 600; color: #2c2523;">
+                                    <i class="fas fa-users" style="color:#c59b27;margin-right:5px;"></i>Jumlah Hadir (Pax)
+                                </span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <button type="button" onclick="window.adjustScanPax(-1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d1c7b7;background:#f6f3ee;font-weight:700;font-size:1rem;cursor:pointer;">-</button>
+                                    <input type="number" id="swal-scan-pax" value="${initialPax}" min="1" max="10" style="width:48px;height:32px;text-align:center;font-weight:700;font-size:0.95rem;border:1px solid #d1c7b7;border-radius:8px;">
+                                    <button type="button" onclick="window.adjustScanPax(1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d1c7b7;background:#f6f3ee;font-weight:700;font-size:1rem;cursor:pointer;">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check-circle"></i> Konfirmasi Hadir',
+                    cancelButtonText: 'Batal / Scan Lagi',
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#6b635b',
+                    reverseButtons: true,
+                    allowOutsideClick: false,
+                    preConfirm: () => {
+                        const nameEl = document.getElementById('swal-scan-name');
+                        const paxEl = document.getElementById('swal-scan-pax');
+                        const finalName = nameEl ? nameEl.value.trim() : g.name;
+                        const finalPax = paxEl ? Math.max(1, parseInt(paxEl.value, 10) || 1) : 1;
+                        if (!finalName) {
+                            Swal.showValidationMessage('Nama tamu tidak boleh kosong');
+                            return false;
+                        }
+                        return { name: finalName, pax: finalPax };
+                    }
+                });
+
+                if (!confirmResult.isConfirmed || !confirmResult.value) {
+                    resumeScannerIfNeeded();
+                    return;
+                }
+
+                // 3) Save confirmed attendance via POST /api/checkin
                 const res = await fetch('/api/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: decodedText })
+                    body: JSON.stringify({
+                        id: g.id || '',
+                        name: confirmResult.value.name,
+                        pax: confirmResult.value.pax,
+                        code: decodedText
+                    })
                 });
                 const data = await res.json();
 
                 if (data.success && data.guest) {
-                    const g = data.guest;
+                    const checkedGuest = data.guest;
                     fetchGuests();
+                    showToast(`Kehadiran '${checkedGuest.name}' (${checkedGuest.pax || 1} orang) berhasil dikonfirmasi!`);
 
-                    if (data.already_checked_in) {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'Sudah Check-In',
-                            html: `
-                                <div style="text-align: left; background: #f8f6f2; padding: 1rem; border-radius: 10px; margin-top: 10px;">
-                                    <p><strong>Nama:</strong> ${escapeHtml(g.name)}</p>
-                                    <p><strong>Kategori:</strong> ${escapeHtml(g.category || 'Umum')}</p>
-                                    <p><strong>Pax:</strong> ${g.pax || 1} Orang</p>
-                                    <p><strong>Waktu Check-in:</strong> ${g.checkin_time}</p>
-                                </div>
-                                <p style="margin-top: 10px; color: #d97706; font-size: 0.85rem;">Tamu ini sudah tercatat check-in sebelumnya.</p>
-                            `,
-                            confirmButtonColor: '#c59b27'
-                        }).then(() => {
-                            setTimeout(() => { isProcessingScan = false; }, 1500);
-                        });
+                    const nextAction = await Swal.fire({
+                        icon: 'success',
+                        title: 'Kehadiran Dikonfirmasi! 🎉',
+                        html: `
+                            <div style="text-align: left; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 12px; margin-top: 8px;">
+                                <p style="font-size: 1.2rem; font-weight: 800; color: #065f46; margin-bottom: 6px;">${escapeHtml(checkedGuest.name)}</p>
+                                <p style="font-size: 0.88rem; margin-bottom: 3px;"><strong>Kategori:</strong> ${escapeHtml(checkedGuest.category || 'Umum')}</p>
+                                <p style="font-size: 0.88rem; margin-bottom: 3px;"><strong>Jumlah Tamu:</strong> ${checkedGuest.pax || 1} Orang</p>
+                                <p style="font-size: 0.88rem;"><strong>Waktu Check-in:</strong> ${escapeHtml(checkedGuest.checkin_time || '-')}</p>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="fas fa-qrcode"></i> Scan Tamu Berikutnya',
+                        cancelButtonText: 'Tutup Kamera',
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#38281d'
+                    });
+
+                    if (nextAction.isConfirmed) {
+                        resumeScannerIfNeeded();
                     } else {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Check-in Berhasil! 🎉',
-                            html: `
-                                <div style="text-align: left; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 10px; margin-top: 10px;">
-                                    <p style="font-size: 1.15rem; font-weight: 700; color: #065f46; margin-bottom: 6px;">${escapeHtml(g.name)}</p>
-                                    <p><strong>Sapaan:</strong> ${escapeHtml(g.salutation || '-')}</p>
-                                    <p><strong>Kategori:</strong> ${escapeHtml(g.category || 'Umum')}</p>
-                                    <p><strong>Jumlah Tamu:</strong> ${g.pax || 1} Orang</p>
-                                    <p><strong>Waktu Check-in:</strong> ${g.checkin_time}</p>
-                                </div>
-                            `,
-                            confirmButtonColor: '#10b981'
-                        }).then(() => {
-                            setTimeout(() => { isProcessingScan = false; }, 1500);
-                        });
+                        closeScannerModal();
                     }
                 } else {
-                    Swal.fire({
+                    await Swal.fire({
                         icon: 'error',
                         title: 'Check-in Gagal',
-                        text: data.message || 'QR Code tidak terdaftar.'
-                    }).then(() => {
-                        setTimeout(() => { isProcessingScan = false; }, 1500);
+                        text: data.message || 'Gagal mencatat kehadiran tamu.'
                     });
+                    resumeScannerIfNeeded();
                 }
             } catch (err) {
                 console.error(err);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal memproses check-in.' }).then(() => {
-                    setTimeout(() => { isProcessingScan = false; }, 1500);
-                });
+                await Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal memproses check-in.' });
+                resumeScannerIfNeeded();
             }
         }
 

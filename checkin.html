@@ -224,8 +224,8 @@
             </div>
 
             <div class="status-badge-wrapper">
-                <div class="status-badge" id="badge-status">
-                    <i class="fas fa-check-circle"></i> CHECK-IN BERHASIL
+                <div class="status-badge already" id="badge-status">
+                    <i class="fas fa-user-check"></i> KONFIRMASI KEHADIRAN
                 </div>
             </div>
 
@@ -239,29 +239,37 @@
                         <span class="val" id="guest-cat">Umum</span>
                     </div>
                     <div class="info-item">
-                        <span class="label">Jumlah Tamu</span>
-                        <span class="val" id="guest-pax">1 Orang</span>
+                        <span class="label">Jumlah Tamu (Pax)</span>
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;" id="pax-selector-wrap">
+                            <button type="button" onclick="adjustPax(-1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d1c7b7;background:#f1ede6;font-weight:700;cursor:pointer;">-</button>
+                            <input type="number" id="checkin-pax-input" value="1" min="1" max="10" style="width:42px;height:28px;text-align:center;font-weight:700;border:1px solid #d1c7b7;border-radius:6px;">
+                            <button type="button" onclick="adjustPax(1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d1c7b7;background:#f1ede6;font-weight:700;cursor:pointer;">+</button>
+                        </div>
+                        <span class="val" id="guest-pax" style="display:none;">1 Orang</span>
                     </div>
                     <div class="info-item">
                         <span class="label">Waktu Check-in</span>
-                        <span class="val" id="checkin-time">-</span>
+                        <span class="val" id="checkin-time">Belum Check-in</span>
                     </div>
                     <div class="info-item">
-                        <span class="label">Status Verifikasi</span>
-                        <span class="val" style="color: var(--success);"><i class="fas fa-shield-alt"></i> Terverifikasi</span>
+                        <span class="label">Status Kehadiran</span>
+                        <span class="val" id="verify-status" style="color: var(--warning);"><i class="fas fa-clock"></i> Menunggu Konfirmasi</span>
                     </div>
                 </div>
 
                 <p class="welcome-msg" id="welcome-msg">
-                    Selamat datang di acara pernikahan kami! Merupakan kebahagiaan bagi kami atas kehadiran Anda.
+                    Silakan klik tombol <strong>Konfirmasi Kehadiran</strong> di bawah ini untuk mencatat kehadiran tamu di lokasi acara pernikahan Alim &amp; Vina.
                 </p>
 
                 <div class="action-buttons">
-                    <a href="/" id="btn-undangan" class="btn btn-gold">
-                        <i class="fas fa-envelope-open-text"></i> Buka Undangan Digital
-                    </a>
+                    <button type="button" id="btn-confirm-checkin" onclick="confirmGuestCheckin()" class="btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-size: 1rem; padding: 0.9rem 1.25rem; box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);">
+                        <i class="fas fa-check-circle"></i> Konfirmasi Kehadiran (Check-in)
+                    </button>
                     <a href="/admin" class="btn btn-outline">
                         <i class="fas fa-user-shield"></i> Buka Dashboard Admin
+                    </a>
+                    <a href="/" id="btn-undangan" class="btn btn-gold" style="display:none;">
+                        <i class="fas fa-envelope-open-text"></i> Buka Undangan Digital
                     </a>
                 </div>
             </div>
@@ -270,17 +278,23 @@
 
     <script src="/firebase-backend.js"></script>
     <script>
-        async function processCheckin() {
+        let currentGuest = null;
+
+        function adjustPax(delta) {
+            const inp = document.getElementById('checkin-pax-input');
+            if (!inp) return;
+            let v = parseInt(inp.value, 10) || 1;
+            v = Math.min(10, Math.max(1, v + delta));
+            inp.value = v;
+        }
+
+        async function loadGuestForConfirmation() {
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id') || '';
             const name = params.get('name') || params.get('to') || '';
 
             try {
-                const res = await fetch('/api/checkin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id, name, code: window.location.href })
-                });
+                const res = await fetch(`/api/checkin/status?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}&code=${encodeURIComponent(window.location.href)}`);
                 const data = await res.json();
 
                 document.getElementById('loading-state').style.display = 'none';
@@ -288,43 +302,75 @@
 
                 if (data.success && data.guest) {
                     const g = data.guest;
+                    currentGuest = g;
                     document.getElementById('guest-name').textContent = g.name;
                     document.getElementById('guest-salutation').textContent = `Kepada Yth. ${g.salutation || 'Bapak/Ibu/Saudara/i'}`;
                     document.getElementById('guest-cat').textContent = g.category || 'Umum';
-                    document.getElementById('guest-pax').textContent = `${g.pax || 1} Orang`;
-                    document.getElementById('checkin-time').textContent = g.checkin_time || 'Baru saja';
-
-                    const badge = document.getElementById('badge-status');
-                    if (data.already_checked_in) {
-                        badge.classList.add('already');
-                        badge.innerHTML = `<i class="fas fa-info-circle"></i> SUDAH CHECK-IN`;
-                        document.getElementById('welcome-msg').textContent = 
-                            `Tamu '${g.name}' telah tercatat check-in sebelumnya pada ${g.checkin_time}. Data telah sinkron dengan admin.`;
-                    } else {
-                        badge.classList.remove('already');
-                        badge.innerHTML = `<i class="fas fa-check-circle"></i> CHECK-IN BERHASIL`;
-                        document.getElementById('welcome-msg').textContent = 
-                            `Selamat datang di acara pernikahan Thomas & Lydia! Data kehadiran Anda berhasil dicatat dan disinkronkan ke meja panitia.`;
-                    }
-
-                    // Update link back to invitation with name
+                    document.getElementById('checkin-pax-input').value = Math.max(parseInt(g.pax, 10) || 1, 1);
                     document.getElementById('btn-undangan').href = `/?to=${encodeURIComponent(g.name)}`;
+
+                    if (g.checked_in) {
+                        document.getElementById('checkin-time').textContent = g.checkin_time || 'Sudah Tercatat';
+                        document.getElementById('verify-status').innerHTML = `<i class="fas fa-check-circle"></i> Sudah Check-in`;
+                        document.getElementById('verify-status').style.color = 'var(--success)';
+                        document.getElementById('welcome-msg').textContent =
+                            `Tamu '${g.name}' sudah tercatat check-in sebelumnya pada ${g.checkin_time}. Anda tetap dapat memperbarui konfirmasi jumlah hadir di bawah.`;
+                    }
                 } else {
-                    document.getElementById('badge-status').classList.add('already');
-                    document.getElementById('badge-status').innerHTML = `<i class="fas fa-exclamation-triangle"></i> GAGAL CHECK-IN`;
-                    document.getElementById('guest-name').textContent = name || 'Tamu Tidak Dikenal';
-                    document.getElementById('welcome-msg').textContent = data.message || 'Data tamu tidak ditemukan di sistem.';
+                    document.getElementById('guest-name').textContent = name || 'Tamu Undangan';
                 }
             } catch (err) {
                 console.error(err);
                 document.getElementById('loading-state').innerHTML = `
                     <i class="fas fa-times-circle" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 1rem;"></i>
-                    <p style="color: #ef4444; font-weight: 600;">Gagal terhubung ke backend server.</p>
+                    <p style="color: #ef4444; font-weight: 600;">Gagal memuat data tamu.</p>
                 `;
             }
         }
 
-        document.addEventListener('DOMContentLoaded', processCheckin);
+        async function confirmGuestCheckin() {
+            const params = new URLSearchParams(window.location.search);
+            const id = (currentGuest && currentGuest.id) || params.get('id') || '';
+            const name = (currentGuest && currentGuest.name) || params.get('name') || params.get('to') || 'Tamu Undangan';
+            const pax = parseInt(document.getElementById('checkin-pax-input').value, 10) || 1;
+            const btn = document.getElementById('btn-confirm-checkin');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses...`;
+
+            try {
+                const res = await fetch('/api/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, name, pax, code: window.location.href })
+                });
+                const data = await res.json();
+
+                if (data.success && data.guest) {
+                    const g = data.guest;
+                    const badge = document.getElementById('badge-status');
+                    badge.classList.remove('already');
+                    badge.innerHTML = `<i class="fas fa-check-circle"></i> CHECK-IN BERHASIL`;
+
+                    document.getElementById('pax-selector-wrap').style.display = 'none';
+                    document.getElementById('guest-pax').style.display = 'block';
+                    document.getElementById('guest-pax').textContent = `${g.pax || 1} Orang`;
+                    document.getElementById('checkin-time').textContent = g.checkin_time || 'Baru saja';
+                    document.getElementById('verify-status').innerHTML = `<i class="fas fa-shield-alt"></i> Terverifikasi Hadir`;
+                    document.getElementById('verify-status').style.color = 'var(--success)';
+                    document.getElementById('welcome-msg').textContent =
+                        `Selamat datang di acara pernikahan Alim & Vina! Kehadiran '${g.name}' (${g.pax || 1} orang) telah berhasil dikonfirmasi.`;
+
+                    btn.style.display = 'none';
+                    document.getElementById('btn-undangan').style.display = 'flex';
+                }
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> Konfirmasi Kehadiran (Check-in)`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadGuestForConfirmation);
     </script>
 </body>
 </html>

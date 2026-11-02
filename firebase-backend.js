@@ -270,48 +270,84 @@
             });
         }
 
+        function parseQrCodeInput(rawCode, fallbackId, fallbackName) {
+            let guestId = String(fallbackId || '').trim();
+            let guestName = String(fallbackName || '').trim();
+            const raw = String(rawCode || '').trim();
+
+            if (raw) {
+                if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/') || raw.includes('?')) {
+                    try {
+                        const parsedUrl = new URL(raw, window.location.origin);
+                        if (parsedUrl.searchParams.get('id')) {
+                            guestId = parsedUrl.searchParams.get('id').trim();
+                        }
+                        const nameKeys = ['name', 'to', 'dear', 'kepada', 'u', 'guest', 'nama'];
+                        for (const k of nameKeys) {
+                            const val = parsedUrl.searchParams.get(k);
+                            if (val && val.trim()) {
+                                guestName = val.trim();
+                                break;
+                            }
+                        }
+                        if (!guestName && !guestId) {
+                            guestName = 'Tamu Undangan';
+                        }
+                    } catch (e) {
+                        guestName = raw;
+                    }
+                } else if (raw.startsWith('gst_')) {
+                    guestId = raw;
+                } else {
+                    guestName = raw;
+                }
+            }
+
+            return { guestId, guestName };
+        }
+
         // 2. GET /api/checkin/status
         if (path === '/api/checkin/status' && method === 'GET') {
-            const guestId = (urlObj.searchParams.get('id') || '').trim();
-            const name = (urlObj.searchParams.get('name') || '').trim();
+            const rawCode = (urlObj.searchParams.get('code') || '').trim();
+            const { guestId, guestName } = parseQrCodeInput(
+                rawCode,
+                urlObj.searchParams.get('id'),
+                urlObj.searchParams.get('name')
+            );
+
             let found = null;
             if (guestId) {
                 found = guests.find(g => g.id === guestId);
             }
-            if (!found && name) {
-                found = guests.find(g => String(g.name || '').trim().toLowerCase() === name.toLowerCase());
+            if (!found && guestName) {
+                found = guests.find(g => String(g.name || '').trim().toLowerCase() === guestName.toLowerCase());
             }
             if (found) {
-                return makeJsonResponse({ success: true, guest: found });
+                return makeJsonResponse({ success: true, registered: true, guest: found });
+            }
+            if (guestName) {
+                return makeJsonResponse({
+                    success: true,
+                    registered: false,
+                    guest: {
+                        id: guestId || '',
+                        name: guestName,
+                        salutation: 'Bapak/Ibu/Saudara/i',
+                        category: 'Tamu Undangan',
+                        rsvp_status: 'pending',
+                        pax: 1,
+                        checked_in: false,
+                        checkin_time: null
+                    }
+                });
             }
             return makeJsonResponse({ success: false, message: 'Tamu belum terdaftar' }, 404);
         }
 
         // 3. POST /api/checkin
         if (path === '/api/checkin' && method === 'POST') {
-            const rawCode = String(body.code || '').trim();
-            let guestId = String(body.id || '').trim();
-            let guestName = String(body.name || '').trim();
-
-            if (rawCode) {
-                if (rawCode.includes('?')) {
-                    try {
-                        const parsedUrl = new URL(rawCode, window.location.origin);
-                        if (parsedUrl.searchParams.get('id')) {
-                            guestId = parsedUrl.searchParams.get('id').trim();
-                        }
-                        if (parsedUrl.searchParams.get('name')) {
-                            guestName = parsedUrl.searchParams.get('name').trim();
-                        } else if (parsedUrl.searchParams.get('to')) {
-                            guestName = parsedUrl.searchParams.get('to').trim();
-                        }
-                    } catch (e) {}
-                } else if (rawCode.startsWith('gst_')) {
-                    guestId = rawCode;
-                } else {
-                    guestName = rawCode;
-                }
-            }
+            const { guestId, guestName } = parseQrCodeInput(body.code, body.id, body.name);
+            const requestedPax = parseInt(body.pax, 10);
 
             let target = null;
             if (guestId) {
@@ -323,12 +359,17 @@
 
             if (target) {
                 const already = Boolean(target.checked_in);
+                if (body.name && String(body.name).trim() && target.name === 'Tamu Undangan') {
+                    target.name = String(body.name).trim();
+                }
                 target.checked_in = true;
                 if (!target.checkin_time) {
                     target.checkin_time = nowStr;
                 }
                 target.rsvp_status = 'present';
-                if (!target.pax || parseInt(target.pax, 10) < 1) {
+                if (!isNaN(requestedPax) && requestedPax >= 1) {
+                    target.pax = requestedPax;
+                } else if (!target.pax || parseInt(target.pax, 10) < 1) {
                     target.pax = 1;
                 }
                 target.updated_at = nowStr;
@@ -337,7 +378,7 @@
                 await syncGuestToFirestore(target);
 
                 const msg = already
-                    ? `Tamu '${target.name}' sudah check-in pada ${target.checkin_time}.`
+                    ? `Kehadiran '${target.name}' berhasil diperbarui (${target.pax} orang).`
                     : `Check-in Berhasil! Selamat datang, ${target.name}.`;
 
                 return makeJsonResponse({
@@ -350,6 +391,7 @@
             }
 
             if (guestName) {
+                const finalPax = (!isNaN(requestedPax) && requestedPax >= 1) ? requestedPax : 1;
                 const newG = {
                     id: genId(),
                     name: guestName,
@@ -357,7 +399,7 @@
                     phone: '',
                     category: 'Check-in Lokasi',
                     rsvp_status: 'present',
-                    pax: 1,
+                    pax: finalPax,
                     message: '',
                     checked_in: true,
                     checkin_time: nowStr,
@@ -373,7 +415,7 @@
                     already_checked_in: false,
                     guest: newG,
                     stats: calculateStats(guests),
-                    message: `Tamu '${guestName}' berhasil didaftarkan & check-in!`
+                    message: `Tamu '${guestName}' berhasil dikonfirmasi hadir!`
                 });
             }
 

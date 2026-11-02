@@ -82,34 +82,59 @@
         if (!barcodeWrapper) return;
 
         const origin = window.location.origin;
-        const guestName = recipient || 'Tamu Undangan';
-        let checkinUrl = `${origin}/checkin?name=${encodeURIComponent(guestName)}`;
-        if (guestId) {
-            checkinUrl += `&id=${encodeURIComponent(guestId)}`;
+
+        function buildCheckinUrl() {
+            const authorInput = document.getElementById('author');
+            const currentName = recipient || (authorInput && authorInput.value.trim()) || 'Tamu Undangan';
+            let url = `${origin}/checkin?name=${encodeURIComponent(currentName)}`;
+            if (guestId) {
+                url += `&id=${encodeURIComponent(guestId)}`;
+            }
+            const qrGuestName = document.querySelector('.ewf-content-left .guest-name');
+            if (qrGuestName) {
+                qrGuestName.textContent = currentName;
+            }
+            return url;
         }
 
-        barcodeWrapper.dataset.url = checkinUrl;
-
         function renderQR() {
+            const checkinUrl = buildCheckinUrl();
+            barcodeWrapper.dataset.url = checkinUrl;
+            barcodeWrapper.setAttribute('data-url', checkinUrl);
+            if (window.jQuery) {
+                try {
+                    window.jQuery(barcodeWrapper).data('url', checkinUrl);
+                } catch (e) {}
+            }
+
             if (typeof QRCode !== 'undefined') {
                 barcodeWrapper.innerHTML = '';
                 new QRCode(barcodeWrapper, {
                     text: checkinUrl,
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
                     colorDark: '#000000',
                     colorLight: '#FFFFFF',
-                    correctLevel: QRCode.CorrectLevel.H
+                    correctLevel: QRCode.CorrectLevel.M
                 });
             } else {
                 setTimeout(renderQR, 200);
             }
         }
+
         renderQR();
+        setTimeout(renderQR, 800);
+
+        const triggerBtn = document.querySelector('.ewf-barcode-trigger');
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', function () {
+                setTimeout(renderQR, 30);
+            });
+        }
 
         // Check if guest is already checked in and display status badge
-        if (recipient) {
-            fetch(`/api/checkin/status?name=${encodeURIComponent(recipient)}&id=${encodeURIComponent(guestId || '')}`)
+        if (recipient || guestId) {
+            fetch(`/api/checkin/status?name=${encodeURIComponent(recipient || '')}&id=${encodeURIComponent(guestId || '')}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.guest && data.guest.checked_in) {
