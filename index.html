@@ -543,14 +543,22 @@ img[src=""] {
     transform: translate3d(0, 0, 0) scale(1) !important;
 }
 .kolomPertama .hero-item-init {
-    opacity: 0 !important;
-    visibility: hidden !important;
+    opacity: 0;
+    visibility: hidden;
     transform: translate3d(0, 28px, 0) scale(0.9);
     filter: blur(7px);
     will-change: opacity, transform, filter;
+    transition:
+        opacity 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+        filter 1.15s cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 1.15s;
 }
 .kolomPertama .hero-item-init.hero-animated {
+    opacity: 1 !important;
     visibility: visible !important;
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    filter: blur(0px) !important;
     animation: heroTextEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 .kolomPertama.is-revealed .hero-item-init.hero-animated .elementor-heading-title {

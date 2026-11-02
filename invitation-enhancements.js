@@ -238,6 +238,10 @@
                         video.playbackRate = targetRate;
                     } catch (e) {}
                 }
+                // Begitu bingkai Jawa biru di video mulai muncul (sekitar detik 5.3 video), tampilkan teks mempelai
+                if (t >= 5.3 && !frameRevealed) {
+                    revealKolomPertama();
+                }
             });
         }
 
@@ -273,17 +277,19 @@
 
             if (kolomPertama) {
                 kolomPertama.classList.add('is-revealed');
+                kolomPertama.style.opacity = '1';
+                kolomPertama.style.visibility = 'visible';
+                kolomPertama.style.pointerEvents = 'auto';
             }
 
             // Animasi bertahap yang halus & mengalir (blur-to-clear + cubic-bezier)
-            // setelah bingkai intro muncul di detik ke-10
             const items = [
                 { sel: '.elementor-element-79fc006', delay: 80 },    // The Wedding of
-                { sel: '.elementor-element-e4d73f0', delay: 260 },   // Thomas
+                { sel: '.elementor-element-e4d73f0', delay: 260 },   // Alim
                 { sel: '.elementor-element-851f9c3', delay: 440 },   // &
-                { sel: '.elementor-element-d7081b6', delay: 620 },   // Lydia
-                { sel: '.elementor-element-83b7a8d', delay: 820 },   // #ThomasLydiaWedding
-                { sel: '.elementor-element-83546e9', delay: 1000 },  // 31 . 12 . 2026
+                { sel: '.elementor-element-d7081b6', delay: 620 },   // Vina
+                { sel: '.elementor-element-83b7a8d', delay: 820 },   // #AlimVinaWedding
+                { sel: '.elementor-element-83546e9', delay: 1000 },  // 12 . 12 . 2026
                 { sel: '.elementor-element-1f63a8d', delay: 1200 }   // Scroll indicator
             ];
 
@@ -294,6 +300,10 @@
                         if (el) {
                             el.classList.remove('elementor-invisible');
                             el.classList.add('hero-animated');
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.transform = 'translate3d(0, 0, 0) scale(1)';
+                            el.style.filter = 'blur(0px)';
                         }
                     }, item.delay);
                 });
