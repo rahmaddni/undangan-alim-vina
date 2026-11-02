@@ -190,6 +190,31 @@
         return loadLocalGuests() || local || [];
     }
 
+    async function fetchLiveGuestsFromFirestore() {
+        await ensureInitialSeed();
+        try {
+            await Promise.race([
+                initFirestore(),
+                new Promise(resolve => setTimeout(resolve, 3500))
+            ]);
+            if (firestoreDb && firestoreMod) {
+                const snap = await firestoreMod.getDocs(firestoreMod.collection(firestoreDb, 'guests'));
+                if (!snap.empty) {
+                    const cloudGuests = [];
+                    snap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        if (d && d.id) cloudGuests.push(d);
+                    });
+                    if (cloudGuests.length > 0) {
+                        saveLocalGuests(cloudGuests);
+                        return cloudGuests;
+                    }
+                }
+            }
+        } catch (e) {}
+        return loadLocalGuests() || [];
+    }
+
     function makeJsonResponse(payload, status = 200) {
         return new Response(JSON.stringify(payload), {
             status,
@@ -464,6 +489,8 @@
                             message: '',
                             checked_in: false,
                             checkin_time: null,
+                            device_token: null,
+                            locked_at: null,
                             created_at: nowStr,
                             updated_at: nowStr
                         };
@@ -497,6 +524,8 @@
                 message: String(body.message || '').trim(),
                 checked_in: false,
                 checkin_time: null,
+                device_token: null,
+                locked_at: null,
                 created_at: nowStr,
                 updated_at: nowStr
             };
@@ -599,6 +628,8 @@
                     message: msg,
                     checked_in: false,
                     checkin_time: null,
+                    device_token: null,
+                    locked_at: null,
                     created_at: nowStr,
                     updated_at: nowStr
                 };
@@ -608,6 +639,144 @@
             }
 
             return makeJsonResponse({ success: true, message: 'Konfirmasi RSVP berhasil disimpan!' });
+        }
+
+        // 9. POST /api/verify-access (Registered Guest Link + 1-Device Lock)
+        if (path === '/api/verify-access' && method === 'POST') {
+            const guestId = String(body.id || '').trim();
+            const guestName = String(body.name || '').trim();
+            const deviceToken = String(body.device_token || '').trim();
+            const isAdminPreview = Boolean(body.admin_preview);
+
+            // Allow Admin preview mode without locking
+            if (isAdminPreview && (!guestId && !guestName)) {
+                return makeJsonResponse({
+                    success: true,
+                    allowed: true,
+                    status: 'admin_preview'
+                });
+            }
+
+            // 1. Block opening invitation without a personalized link
+            if (!guestId && !guestName) {
+                return makeJsonResponse({
+                    success: true,
+                    allowed: false,
+                    reason: 'no_guest',
+                    title: 'Undangan Khusus Tamu Terdaftar',
+                    message: 'Mohon maaf, undangan digital ini bersifat pribadi dan hanya dapat dibuka melalui tautan (link) resmi yang dikirimkan khusus kepada masing-masing tamu undangan.'
+                });
+            }
+
+            // Fetch latest guest list from Cloud Firestore so device lock is synced across phones
+            const liveGuests = await fetchLiveGuestsFromFirestore();
+            let target = null;
+
+            if (guestId) {
+                target = liveGuests.find(g => g.id === guestId);
+                // Verify that if someone modified ?to=Name in URL, it must still match the registered guest's name
+                if (target && guestName) {
+                    const registeredNameLower = String(target.name || '').trim().toLowerCase();
+                    const urlNameLower = guestName.toLowerCase();
+                    if (registeredNameLower !== urlNameLower) {
+                        return makeJsonResponse({
+                            success: true,
+                            allowed: false,
+                            reason: 'name_mismatch',
+                            guest_name: target.name,
+                            title: 'Tautan Undangan Tidak Sesuai',
+                            message: 'Tautan undangan ini telah dimodifikasi atau nama penerima tidak sesuai dengan kode undangan resmi yang terdaftar.'
+                        });
+                    }
+                }
+            } else if (guestName) {
+                target = liveGuests.find(g => String(g.name || '').trim().toLowerCase() === guestName.toLowerCase());
+            }
+
+            // 2. Block if guest is not registered in Admin
+            if (!target) {
+                return makeJsonResponse({
+                    success: true,
+                    allowed: false,
+                    reason: 'not_registered',
+                    guest_name: guestName,
+                    title: 'Tautan Undangan Tidak Terdaftar',
+                    message: `Mohon maaf, tautan undangan untuk "${guestName || 'Tamu'}" tidak terdaftar dalam daftar tamu resmi. Silakan gunakan link undangan asli yang dikirimkan oleh mempelai.`
+                });
+            }
+
+            // 3. If opened via Admin Preview button, allow without claiming device lock
+            if (isAdminPreview) {
+                return makeJsonResponse({
+                    success: true,
+                    allowed: true,
+                    status: 'admin_preview',
+                    guest: target
+                });
+            }
+
+            // 4. Check 1-Device Lock
+            if (!target.device_token) {
+                if (deviceToken) {
+                    target.device_token = deviceToken;
+                    target.locked_at = nowStr;
+                    target.updated_at = nowStr;
+                    saveLocalGuests(liveGuests);
+                    await syncGuestToFirestore(target);
+                }
+                return makeJsonResponse({
+                    success: true,
+                    allowed: true,
+                    status: 'claimed',
+                    guest: target
+                });
+            }
+
+            if (target.device_token === deviceToken) {
+                return makeJsonResponse({
+                    success: true,
+                    allowed: true,
+                    status: 'matched',
+                    guest: target
+                });
+            }
+
+            // Locked to another device!
+            return makeJsonResponse({
+                success: true,
+                allowed: false,
+                reason: 'device_locked',
+                guest_name: target.name,
+                salutation: target.salutation || 'Bapak/Ibu/Saudara/i',
+                locked_at: target.locked_at || '',
+                title: 'Undangan Terkunci',
+                message: `Tautan undangan khusus untuk "${target.name}" ini bersifat pribadi (1 Tautan = 1 Perangkat) dan telah dibuka serta terkunci pada perangkat pemilik undangan.`
+            });
+        }
+
+        // 10. POST /api/reset-device-lock (Admin resets guest's 1-device lock)
+        if (path === '/api/reset-device-lock' && method === 'POST') {
+            const guestId = String(body.id || '').trim();
+            if (!guestId) {
+                return makeJsonResponse({ success: false, message: 'ID tamu diperlukan' }, 400);
+            }
+            const liveGuests = await fetchLiveGuestsFromFirestore();
+            const target = liveGuests.find(g => g.id === guestId);
+            if (!target) {
+                return makeJsonResponse({ success: false, message: 'Tamu tidak ditemukan' }, 404);
+            }
+            target.device_token = null;
+            target.locked_at = null;
+            target.updated_at = nowStr;
+            saveLocalGuests(liveGuests);
+            await syncGuestToFirestore(target);
+
+            return makeJsonResponse({
+                success: true,
+                message: `Kunci perangkat untuk '${target.name}' berhasil direset. Link kini dapat dibuka di perangkat baru.`,
+                guest: target,
+                stats: calculateStats(liveGuests)
+            });
         }
 
         return makeJsonResponse({ error: 'Endpoint not found' }, 404);

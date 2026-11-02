@@ -732,9 +732,187 @@
     }
 
     // ==========================================
+    // 7. EXCLUSIVE GUEST LINK & 1-DEVICE LOCK GUARD
+    // ==========================================
+    const DEVICE_TOKEN_KEY = 'undangan_device_token_v1';
+
+    function getOrCreateDeviceToken() {
+        let token = '';
+        try {
+            token = localStorage.getItem(DEVICE_TOKEN_KEY) || '';
+        } catch (e) {}
+
+        if (!token) {
+            try {
+                const match = document.cookie.match(new RegExp('(^| )' + DEVICE_TOKEN_KEY + '=([^;]+)'));
+                if (match && match[2]) {
+                    token = decodeURIComponent(match[2]);
+                }
+            } catch (e) {}
+        }
+
+        if (!token) {
+            const randPart = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID().replace(/-/g, '')
+                : (Math.random().toString(36).substring(2) + Date.now().toString(36));
+            token = 'dev_' + randPart.substring(0, 28);
+        }
+
+        try {
+            localStorage.setItem(DEVICE_TOKEN_KEY, token);
+        } catch (e) {}
+        try {
+            document.cookie = `${DEVICE_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=31536000; SameSite=Lax`;
+        } catch (e) {}
+
+        return token;
+    }
+
+    function escapeHtmlStr(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderExclusiveLockScreen(info) {
+        // Stop audio & video and lock scroll
+        const song = document.getElementById('song');
+        if (song) {
+            try { song.pause(); } catch (e) {}
+        }
+        const video = document.querySelector('.motionSection .elementor-background-video-container video');
+        if (video) {
+            try { video.pause(); } catch (e) {}
+        }
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100vh';
+
+        let existing = document.getElementById('exclusive-lock-overlay');
+        if (existing) existing.remove();
+
+        const isDeviceLocked = info && info.reason === 'device_locked';
+        const guestName = (info && info.guest_name) ? escapeHtmlStr(info.guest_name) : '';
+        const salutation = (info && info.salutation) ? escapeHtmlStr(info.salutation) : 'Bapak/Ibu/Saudara/i';
+        const title = escapeHtmlStr((info && info.title) || 'Undangan Terkunci');
+        const message = escapeHtmlStr(
+            (info && info.message) ||
+            'Mohon maaf, tautan undangan ini bersifat pribadi dan hanya dapat diakses oleh penerima undangan yang terdaftar.'
+        );
+
+        const overlay = document.createElement('div');
+        overlay.id = 'exclusive-lock-overlay';
+        overlay.style.cssText = [
+            'position:fixed',
+            'inset:0',
+            'z-index:999999',
+            'background:radial-gradient(circle at center, #1e354d 0%, #0f1c2b 100%)',
+            'color:#ffffff',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'padding:24px',
+            'font-family:"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+            'text-align:center'
+        ].join(';');
+
+        overlay.innerHTML = `
+            <div style="max-width:440px;width:100%;background:rgba(255,255,255,0.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(212,175,55,0.38);border-radius:22px;padding:34px 26px;box-shadow:0 24px 60px rgba(0,0,0,0.48);position:relative;overflow:hidden;">
+                <div style="width:74px;height:74px;margin:0 auto 16px;border-radius:50%;background:rgba(212,175,55,0.14);border:1.5px solid rgba(212,175,55,0.55);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 25px rgba(0,0,0,0.25);">
+                    <img src="favicon.png" alt="Gunungan" style="width:48px;height:48px;object-fit:contain;" onerror="this.style.display='none'">
+                </div>
+
+                <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(239,68,68,0.18);color:#fca5a5;border:1px solid rgba(248,113,113,0.4);padding:5px 14px;border-radius:999px;font-size:0.75rem;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;margin-bottom:14px;">
+                    🔒 Akses Undangan Terkunci
+                </div>
+
+                <h2 style="font-family:'Cinzel',serif;font-size:1.45rem;font-weight:700;color:#f5d77f;margin:0 0 10px;line-height:1.3;">
+                    ${title}
+                </h2>
+
+                ${guestName ? `
+                    <div style="background:rgba(15,28,43,0.65);border:1px solid rgba(212,175,55,0.3);border-radius:14px;padding:12px 16px;margin:14px 0;">
+                        <div style="font-size:0.74rem;color:#cbd5e1;margin-bottom:3px;">Tautan Undangan Khusus Untuk:</div>
+                        <div style="font-size:0.78rem;color:#e2e8f0;opacity:0.9;">${salutation}</div>
+                        <div style="font-size:1.18rem;font-weight:800;color:#ffffff;margin-top:2px;">${guestName}</div>
+                    </div>
+                ` : ''}
+
+                <p style="font-size:0.88rem;line-height:1.6;color:#e2e8f0;margin:12px 0 18px;">
+                    ${message}
+                </p>
+
+                <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:11px 14px;font-size:0.76rem;color:#94a3b8;line-height:1.5;border:1px solid rgba(255,255,255,0.08);">
+                    ${isDeviceLocked
+                        ? 'Sistem keamanan <strong>1 Tautan = 1 Perangkat</strong> aktif. Jika Anda adalah pemilik undangan ini dan berganti HP/perangkat, silakan hubungi mempelai untuk mereset kunci perangkat Anda.'
+                        : 'Pastikan Anda membuka tautan (link) undangan lengkap yang dikirimkan langsung melalui WhatsApp oleh mempelai.'}
+                </div>
+
+                <div style="margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);font-family:'Cinzel',serif;font-size:0.82rem;color:#f5d77f;letter-spacing:1px;">
+                    The Wedding of Alim &amp; Vina
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+    }
+
+    async function initExclusiveAccessGuard() {
+        const params = new URLSearchParams(window.location.search);
+        const isAdminPreview = params.get('admin_preview') === '1' || params.get('preview') === 'admin';
+        if (isAdminPreview) return;
+
+        const keys = ['to', 'dear', 'kepada', 'u', 'guest', 'nama', 'name'];
+        let recipient = '';
+        for (const key of keys) {
+            const val = params.get(key);
+            if (val && val.trim()) {
+                recipient = val.trim();
+                break;
+            }
+        }
+        const guestId = (params.get('id') || '').trim();
+
+        // Immediately lock if opened without any guest link parameter
+        if (!recipient && !guestId) {
+            renderExclusiveLockScreen({
+                reason: 'no_guest',
+                title: 'Undangan Khusus Tamu Terdaftar',
+                message: 'Mohon maaf, undangan digital ini bersifat pribadi dan hanya dapat dibuka melalui tautan (link) resmi yang dikirimkan khusus kepada masing-masing tamu undangan.'
+            });
+            return;
+        }
+
+        const deviceToken = getOrCreateDeviceToken();
+
+        try {
+            const res = await fetch('/api/verify-access', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: guestId,
+                    name: recipient,
+                    device_token: deviceToken,
+                    admin_preview: isAdminPreview
+                })
+            });
+            const data = await res.json();
+            if (data && data.allowed === false) {
+                renderExclusiveLockScreen(data);
+            }
+        } catch (err) {
+            console.warn('Access verification check note:', err);
+        }
+    }
+
+    // ==========================================
     // INITIALIZATION ON DOM READY
     // ==========================================
     function onReady() {
+        initExclusiveAccessGuard();
         initGuestName();
         initCountdown();
         initCoverOpening();

@@ -1015,7 +1015,7 @@
             <button onclick="openScannerModal()" class="btn btn-scanner">
                 <i class="fas fa-qrcode"></i> 📷 SCAN QR
             </button>
-            <a href="/" target="_blank" class="btn btn-outline-gold" title="Lihat Tampilan Undangan">
+            <a href="/?admin_preview=1" target="_blank" class="btn btn-outline-gold" title="Lihat Tampilan Undangan (Mode Preview Admin)">
                 <i class="fas fa-external-link-alt"></i> Undangan
             </a>
             <a href="/api/export" class="btn btn-gold" title="Download Data Tamu ke Excel">
@@ -1284,7 +1284,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
             <i class="fas fa-sliders-h"></i>
             <span>Setting</span>
         </button>
-        <a href="/" target="_blank" class="mbn-item">
+        <a href="/?admin_preview=1" target="_blank" class="mbn-item">
             <i class="fas fa-envelope-open-text"></i>
             <span>Undangan</span>
         </a>
@@ -1392,7 +1392,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
         </div>
     </div>
 
-    <script src="/firebase-backend.js?v=20261103_2"></script>
+    <script src="/firebase-backend.js?v=20261103_3"></script>
     <script>
         let allGuests = [];
         let filteredGuests = [];
@@ -1646,6 +1646,36 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                     ? `<a href="tel:${g.phone}" style="color:var(--primary-brown);text-decoration:none;"><i class="fab fa-whatsapp" style="color:#25d366;margin-right:4px;"></i>${g.phone}</a>` 
                     : `<span style="color:#a3998f;font-style:italic;">-</span>`;
 
+                const previewLink = `${link}&admin_preview=1`;
+
+                // 1-Device Lock Status Badge & Reset Button
+                const isDeviceLocked = Boolean(g.device_token);
+                const lockBadgeDesktop = isDeviceLocked
+                    ? `<div style="display:flex;align-items:center;gap:4px;margin-top:5px;">
+                           <span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:0.7rem;padding:2px 7px;" title="Terkunci di HP/perangkat tamu (${escapeHtml(g.locked_at || '')})">
+                               <i class="fas fa-lock"></i> Terkunci (1 HP)
+                           </span>
+                           <button class="btn btn-sm btn-secondary" style="padding:2px 6px;font-size:0.7rem;" onclick="resetDeviceLock('${g.id}', '${escapeHtml(g.name)}')" title="Reset Kunci Perangkat agar tamu bisa buka di HP baru">
+                               <i class="fas fa-sync-alt"></i> Reset Kunci
+                           </button>
+                       </div>`
+                    : `<div style="margin-top:5px;">
+                           <span class="badge" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;font-size:0.7rem;padding:2px 7px;">
+                               <i class="fas fa-lock-open"></i> Belum Dibuka (1 HP)
+                           </span>
+                       </div>`;
+
+                const lockBadgeMobile = isDeviceLocked
+                    ? `<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;">
+                           <i class="fas fa-lock"></i> Terkunci di HP Tamu
+                       </span>
+                       <button class="btn btn-sm btn-secondary" style="padding:3px 8px;font-size:0.72rem;" onclick="resetDeviceLock('${g.id}', '${escapeHtml(g.name)}')">
+                           <i class="fas fa-sync-alt"></i> Reset Kunci HP
+                       </button>`
+                    : `<span class="badge" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;">
+                           <i class="fas fa-lock-open"></i> Belum Dibuka (1 HP)
+                       </span>`;
+
                 // 1. Build Desktop Table Row
                 tableHtml += `
                     <tr>
@@ -1668,13 +1698,14 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
+                            ${lockBadgeDesktop}
                         </td>
                         <td style="text-align: right;">
                             <div class="action-buttons" style="justify-content: flex-end;">
                                 <a href="${waUrl}" target="_blank" class="btn btn-sm btn-success" title="Kirim via WhatsApp">
                                     <i class="fab fa-whatsapp"></i> WA
                                 </a>
-                                <a href="${link}" target="_blank" class="btn btn-sm btn-outline-gold" title="Buka Undangan Tamu Ini">
+                                <a href="${previewLink}" target="_blank" class="btn btn-sm btn-outline-gold" title="Preview Undangan Tamu Ini (Tanpa Mengunci Perangkat)">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 <button class="btn btn-sm btn-secondary" onclick="openEditModal('${g.id}')" title="Edit Tamu">
@@ -1706,6 +1737,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                         <div class="mgc-status-row">
                             ${checkinDisplayMobile}
                             ${statusBadge}
+                            ${lockBadgeMobile}
                             ${g.phone ? `<a href="tel:${g.phone}" class="badge" style="background:#f0f9ff;color:#0284c7;text-decoration:none;"><i class="fab fa-whatsapp" style="color:#25d366;"></i> ${g.phone}</a>` : ''}
                         </div>
 
@@ -1727,7 +1759,7 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                             <a href="${waUrl}" target="_blank" class="btn btn-sm btn-success" style="flex:1;">
                                 <i class="fab fa-whatsapp"></i> WhatsApp
                             </a>
-                            <a href="${link}" target="_blank" class="btn btn-sm btn-outline-gold" title="Buka Undangan">
+                            <a href="${previewLink}" target="_blank" class="btn btn-sm btn-outline-gold" title="Preview Undangan (Tanpa Mengunci)">
                                 <i class="fas fa-eye"></i>
                             </a>
                             <button class="btn btn-sm btn-secondary" onclick="openEditModal('${g.id}')" title="Edit Tamu">
@@ -2279,6 +2311,40 @@ Merupakan kehormatan bagi kami apabila Anda berkenan hadir dan memberikan doa re
                 } catch (err) {
                     console.error(err);
                     Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal menghapus tamu.' });
+                }
+            }
+        }
+
+        // Reset 1-Device Lock
+        async function resetDeviceLock(id, name) {
+            const confirm = await Swal.fire({
+                title: 'Reset Kunci Perangkat?',
+                html: `Tautan undangan untuk <strong>${escapeHtml(name)}</strong> saat ini terkunci pada HP/perangkat pertama yang membukanya.<br><br>Reset kunci agar link dapat dibuka kembali di HP/perangkat baru?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b635b',
+                confirmButtonText: '<i class="fas fa-sync-alt"></i> Ya, Reset Kunci',
+                cancelButtonText: 'Batal'
+            });
+
+            if (confirm.isConfirmed) {
+                try {
+                    const res = await fetch('/api/reset-device-lock', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message || `Kunci perangkat '${name}' berhasil direset!`);
+                        fetchGuests();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: data.message || 'Gagal mereset kunci perangkat.' });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal mereset kunci perangkat.' });
                 }
             }
         }

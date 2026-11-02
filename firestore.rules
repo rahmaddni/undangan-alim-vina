@@ -19,6 +19,8 @@ rules_version = '2';
 //   - message: string (optional, 0..2000 chars) - Wedding wishes / congratulatory message
 //   - checked_in: bool (optional) - Whether the guest has checked in at the venue
 //   - checkin_time: string or null (optional, 0..100 chars) - Timestamp string of venue check-in
+//   - device_token: string or null (optional, 0..200 chars) - Unique device token for 1-device link locking
+//   - locked_at: string or null (optional, 0..100 chars) - Timestamp string when invitation link was claimed
 //   - created_at: string (optional, 0..100 chars) - Creation timestamp string
 //   - updated_at: string (optional, 0..100 chars) - Last update timestamp string
 //
@@ -113,6 +115,8 @@ service cloud.firestore {
           'message',
           'checked_in',
           'checkin_time',
+          'device_token',
+          'locked_at',
           'created_at',
           'updated_at'
         ]) &&
@@ -127,6 +131,8 @@ service cloud.firestore {
         isValidOptionalString('message', 0, 2000) &&
         (!('checked_in' in data) || data.checked_in is bool) &&
         isValidOptionalNullableString('checkin_time', 0, 100) &&
+        isValidOptionalNullableString('device_token', 0, 200) &&
+        isValidOptionalNullableString('locked_at', 0, 100) &&
         isValidOptionalString('created_at', 0, 100) &&
         isValidOptionalString('updated_at', 0, 100);
     }
