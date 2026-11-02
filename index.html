@@ -395,20 +395,6 @@ var EvGlobal = {"ajaxurl":"https://hi.inviee.id/wp-admin/admin-ajax.php","isAdmi
     visibility: visible !important;
 }
 
-/* Accessibility: tone down heavy motion when user prefers reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    .elementor-invisible, .estetik-reveal, .cover-reveal, .hero-item-init,
-    .reveal, .fade-in, .muncul-atas, .muncul-bawah, .muncul-kiri, .muncul-kanan, .zoom-in, .zoom-out,
-    .fade-in2, .muncul-atas2, .muncul-bawah2, .muncul-kiri2, .muncul-kanan2, .zoom-in2, .zoom-out2 {
-        transition-duration: 0.2s !important;
-        transform: none !important;
-        filter: none !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-        animation: none !important;
-    }
-}
-
 /* Fix background slideshow in Save The Date section (.elementor-element-800b90d) */
 .elementor-element-800b90d {
     background-image: url('Foto%20Pw/IMG_1616.JPG.jpeg') !important;
@@ -509,65 +495,40 @@ img[src=""] {
 }
 
 /* Kolom Pertama (Gate Intro Text Frame) - Smooth Entrance & Floating Motion */
-@keyframes heroTextEntrance {
-    0% {
-        opacity: 0;
-        transform: translate3d(0, 28px, 0) scale(0.9);
-        filter: blur(7px);
-    }
-    70% {
-        opacity: 1;
-        transform: translate3d(0, -2px, 0) scale(1.015);
-        filter: blur(0px);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-        filter: blur(0px);
-    }
-}
 @keyframes floatSoftText {
     0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(0, -4px, 0); }
+    50% { transform: translate3d(0, -5px, 0); }
 }
 .kolomPertama {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translate3d(0, 12px, 0) scale(0.985);
-    transition:
-        opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 1.1s cubic-bezier(0.16, 1, 0.3, 1),
-        visibility 1.1s;
 }
 .kolomPertama.is-revealed {
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    transform: translate3d(0, 0, 0) scale(1) !important;
 }
 .kolomPertama .hero-item-init {
     opacity: 0;
     visibility: hidden;
-    transform: translate3d(0, 28px, 0) scale(0.9);
-    filter: blur(7px);
+    transform: translate3d(0, 32px, 0) scale(0.88);
+    filter: blur(8px);
     will-change: opacity, transform, filter;
     transition:
-        opacity 1.15s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 1.15s cubic-bezier(0.16, 1, 0.3, 1),
-        filter 1.15s cubic-bezier(0.16, 1, 0.3, 1),
-        visibility 1.15s;
+        opacity 1.25s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 1.25s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 1.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .kolomPertama .hero-item-init.hero-animated {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translate3d(0, 0, 0) scale(1) !important;
-    filter: blur(0px) !important;
-    animation: heroTextEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0px);
 }
 .kolomPertama.is-revealed .hero-item-init.hero-animated .elementor-heading-title {
     display: inline-block;
-    animation: floatSoftText 4.6s ease-in-out 1.25s infinite;
+    animation: floatSoftText 4.2s ease-in-out 1.3s infinite;
 }
 
 /* RSVP Customizations: 2-Column Hadir & Tidak Hadir Only, No Sticker, No Wishes List */

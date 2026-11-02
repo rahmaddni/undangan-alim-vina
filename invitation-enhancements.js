@@ -172,8 +172,8 @@
         const video = document.querySelector('.motionSection .elementor-background-video-container video');
         const kolomPertama = document.querySelector('.kolomPertama');
 
-        // Waktu kemunculan teks hero mengikuti saat bingkai Jawa biru muncul di video (~5.3 detik pada kecepatan asli 1.0x)
-        const delayMs = 5400;
+        // Waktu kemunculan teks hero: setelah bingkai Jawa biru muncul penuh di video (~9.8 - 10.0 detik pada kecepatan 1.0x)
+        const delayMs = 10000;
         if (kolomPertama) {
             kolomPertama.dataset.delayTime = String(delayMs);
         }
@@ -208,10 +208,10 @@
                 }
             });
 
-            // Pantau waktu video secara ringan tanpa mengubah playbackRate di tengah jalan
+            // Tampilkan teks hanya SETELAH bingkai Jawa biru muncul di video (detik ke-9.8 pada kecepatan normal 1.0x)
             video.addEventListener('timeupdate', function () {
                 if (!canPlayGateVideo) return;
-                if (video.currentTime >= 5.2 && !frameRevealed) {
+                if (video.currentTime >= 9.8 && !frameRevealed) {
                     revealKolomPertama();
                 }
             });
@@ -258,31 +258,111 @@
                 kolomPertama.style.pointerEvents = 'auto';
             }
 
-            // Animasi bertahap yang halus & mengalir (blur-to-clear + cubic-bezier)
+            // Animasi bertahap yang sangat halus, mengalir, dan estetik setelah bingkai muncul
             const items = [
-                { sel: '.elementor-element-79fc006', delay: 80 },    // The Wedding of
-                { sel: '.elementor-element-e4d73f0', delay: 260 },   // Alim
-                { sel: '.elementor-element-851f9c3', delay: 440 },   // &
-                { sel: '.elementor-element-d7081b6', delay: 620 },   // Vina
-                { sel: '.elementor-element-83b7a8d', delay: 820 },   // #AlimVinaWedding
-                { sel: '.elementor-element-83546e9', delay: 1000 },  // 12 . 12 . 2026
-                { sel: '.elementor-element-1f63a8d', delay: 1200 }   // Scroll indicator
+                {
+                    sel: '.elementor-element-79fc006', // The Wedding of
+                    delay: 100,
+                    duration: 1300,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(0, -22px, 0) scale(0.92)', filter: 'blur(6px)' },
+                        { opacity: 1, transform: 'translate3d(0, 2px, 0) scale(1.01)', filter: 'blur(0px)', offset: 0.7 },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-e4d73f0', // Alim
+                    delay: 380,
+                    duration: 1450,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(-28px, 24px, 0) scale(0.86)', filter: 'blur(8px)' },
+                        { opacity: 1, transform: 'translate3d(2px, -3px, 0) scale(1.03)', filter: 'blur(0px)', offset: 0.7 },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-851f9c3', // &
+                    delay: 660,
+                    duration: 1300,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(0, 16px, 0) scale(0.75)', filter: 'blur(6px)' },
+                        { opacity: 1, transform: 'translate3d(0, -2px, 0) scale(1.05)', filter: 'blur(0px)', offset: 0.7 },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-d7081b6', // Vina
+                    delay: 920,
+                    duration: 1450,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(28px, 24px, 0) scale(0.86)', filter: 'blur(8px)' },
+                        { opacity: 1, transform: 'translate3d(-2px, -3px, 0) scale(1.03)', filter: 'blur(0px)', offset: 0.7 },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-83b7a8d', // #AlimVinaWedding
+                    delay: 1200,
+                    duration: 1300,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(0, 24px, 0) scale(0.92)', filter: 'blur(6px)' },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-83546e9', // 12 . 12 . 2026
+                    delay: 1450,
+                    duration: 1300,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(0, 24px, 0) scale(0.92)', filter: 'blur(6px)' },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)', filter: 'blur(0px)' }
+                    ]
+                },
+                {
+                    sel: '.elementor-element-1f63a8d', // Scroll indicator
+                    delay: 1700,
+                    duration: 1200,
+                    keyframes: [
+                        { opacity: 0, transform: 'translate3d(0, 20px, 0) scale(0.9)' },
+                        { opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)' }
+                    ]
+                }
             ];
 
-            requestAnimationFrame(() => {
-                items.forEach(item => {
-                    setTimeout(() => {
-                        const el = document.querySelector(item.sel);
-                        if (el) {
-                            el.classList.remove('elementor-invisible');
-                            el.classList.add('hero-animated');
-                            el.style.opacity = '1';
-                            el.style.visibility = 'visible';
-                            el.style.transform = 'translate3d(0, 0, 0) scale(1)';
-                            el.style.filter = 'blur(0px)';
+            items.forEach(item => {
+                setTimeout(() => {
+                    const el = document.querySelector(item.sel);
+                    if (!el) return;
+
+                    el.classList.remove('elementor-invisible');
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '0';
+
+                    const finalize = () => {
+                        el.classList.add('hero-animated');
+                        el.style.opacity = '1';
+                        el.style.visibility = 'visible';
+                        el.style.transform = 'translate3d(0, 0, 0) scale(1)';
+                        el.style.filter = 'blur(0px)';
+                    };
+
+                    if (typeof el.animate === 'function') {
+                        try {
+                            const anim = el.animate(item.keyframes, {
+                                duration: item.duration,
+                                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                                fill: 'forwards'
+                            });
+                            anim.onfinish = finalize;
+                            setTimeout(finalize, item.duration + 60);
+                        } catch (err) {
+                            finalize();
                         }
-                    }, item.delay);
-                });
+                    } else {
+                        void el.offsetWidth;
+                        finalize();
+                    }
+                }, item.delay);
             });
 
             // Trigger scroll reveals untuk section di bawahnya
@@ -319,8 +399,17 @@
                 }, { once: true });
             }
 
-            // Fallback timer tepat saat bingkai Jawa biru terbuka (~5.4 detik pada kecepatan normal 1.0x)
-            revealTimerId = setTimeout(revealKolomPertama, delayMs);
+            // Pastikan teks baru muncul SETELAH bingkai muncul (~9.8 - 10.0 detik)
+            function checkAndReveal() {
+                if (frameRevealed) return;
+                if (video && !video.paused && !video.ended && video.currentTime > 0 && video.currentTime < 9.6) {
+                    const remainingMs = Math.max(200, (9.8 - video.currentTime) * 1000);
+                    revealTimerId = setTimeout(checkAndReveal, remainingMs);
+                    return;
+                }
+                revealKolomPertama();
+            }
+            revealTimerId = setTimeout(checkAndReveal, delayMs);
         }
 
         function triggerOpen() {
