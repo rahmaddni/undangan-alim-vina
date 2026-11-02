@@ -484,7 +484,7 @@ img[src=""] {
     display: none !important;
 }
 
-/* Ensure motion video fills container */
+/* Ensure motion video fills container with GPU hardware acceleration */
 .motionSection .elementor-background-video-container {
     position: absolute;
     inset: 0;
@@ -493,6 +493,8 @@ img[src=""] {
     overflow: hidden;
     z-index: 0;
     pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
 }
 .motionSection .elementor-background-video-container video {
     width: 100% !important;
@@ -501,7 +503,9 @@ img[src=""] {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate3d(-50%, -50%, 0);
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 /* Kolom Pertama (Gate Intro Text Frame) - Smooth Entrance & Floating Motion */

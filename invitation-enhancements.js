@@ -172,8 +172,8 @@
         const video = document.querySelector('.motionSection .elementor-background-video-container video');
         const kolomPertama = document.querySelector('.kolomPertama');
 
-        // Delay kemunculan teks hero: 10 detik (10000 ms)
-        const delayMs = 10000;
+        // Waktu kemunculan teks hero mengikuti saat bingkai Jawa biru muncul di video (~5.3 detik pada kecepatan asli 1.0x)
+        const delayMs = 5400;
         if (kolomPertama) {
             kolomPertama.dataset.delayTime = String(delayMs);
         }
@@ -181,65 +181,37 @@
         let isOpened = false;
         let canPlayGateVideo = false;
         let frameRevealed = false;
+        let revealTimerId = null;
 
-        // Pastikan video diam di frame 0 (gerbang tertutup) sebelum scroll sampai di #open
+        // Siapkan video di frame awal (gerbang tertutup) sekali saja saat halaman dimuat
+        // tanpa mengubah-ubah playbackRate agar decoder memutar video 30fps dengan mulus tanpa patah-patah
         if (video) {
             video.autoplay = false;
             video.loop = false;
             video.muted = true;
+            video.playsInline = true;
+            video.preload = 'auto';
             try {
+                video.defaultPlaybackRate = 1.0;
+                video.playbackRate = 1.0;
                 video.pause();
-                video.currentTime = 0.001;
+                if (video.currentTime > 0.05) {
+                    video.currentTime = 0;
+                }
             } catch (e) {}
 
-            const lockAtClosedGate = function () {
-                if (!canPlayGateVideo) {
-                    try {
-                        video.pause();
-                        if (Math.abs(video.currentTime - 0.001) > 0.05) {
-                            video.currentTime = 0.001;
-                        }
-                    } catch (e) {}
-                }
-            };
-
-            video.addEventListener('loadedmetadata', lockAtClosedGate);
-            video.addEventListener('loadeddata', lockAtClosedGate);
             video.addEventListener('play', function () {
                 if (!canPlayGateVideo) {
                     try {
                         video.pause();
-                        video.currentTime = 0.001;
                     } catch (e) {}
                 }
             });
 
-            // Atur kecepatan dinamis:
-            // - Detik 0.0s s/d 1.8s (animasi pintu gerbang kayu membuka): diperlambat (0.35x -> ~5.1 detik)
-            //   agar gerakan daun pintu gerbang membuka terlihat jelas & anggun
-            // - Detik 1.8s s/d 9.0s (masuk ke pendopo & kemunculan bingkai): (1.45x -> ~4.9 detik)
-            //   sehingga tepat di detik ke-10 bingkai terbuka penuh bersamaan dengan munculnya teks
+            // Pantau waktu video secara ringan tanpa mengubah playbackRate di tengah jalan
             video.addEventListener('timeupdate', function () {
-                if (!canPlayGateVideo) {
-                    lockAtClosedGate();
-                    return;
-                }
-                const t = video.currentTime;
-                let targetRate = 0.85;
-                if (t < 1.8) {
-                    targetRate = 0.35;
-                } else if (t < 9.0) {
-                    targetRate = 1.45;
-                } else {
-                    targetRate = 0.85;
-                }
-                if (Math.abs(video.playbackRate - targetRate) > 0.05) {
-                    try {
-                        video.playbackRate = targetRate;
-                    } catch (e) {}
-                }
-                // Begitu bingkai Jawa biru di video mulai muncul (sekitar detik 5.3 video), tampilkan teks mempelai
-                if (t >= 5.3 && !frameRevealed) {
+                if (!canPlayGateVideo) return;
+                if (video.currentTime >= 5.2 && !frameRevealed) {
                     revealKolomPertama();
                 }
             });
@@ -274,6 +246,10 @@
         function revealKolomPertama() {
             if (frameRevealed) return;
             frameRevealed = true;
+            if (revealTimerId) {
+                clearTimeout(revealTimerId);
+                revealTimerId = null;
+            }
 
             if (kolomPertama) {
                 kolomPertama.classList.add('is-revealed');
@@ -322,32 +298,40 @@
             if (video) {
                 video.loop = false;
                 try {
-                    video.pause();
-                    video.currentTime = 0;
-                    video.playbackRate = 0.35;
+                    if (video.playbackRate !== 1.0) {
+                        video.playbackRate = 1.0;
+                    }
+                    if (video.currentTime > 0.2) {
+                        video.currentTime = 0;
+                    }
                 } catch (e) {}
 
-                video.play().catch(e => console.log("Video play prevented:", e));
+                const playPromise = video.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(e => {
+                        console.log("Video play prevented:", e);
+                        revealKolomPertama();
+                    });
+                }
 
                 video.addEventListener('ended', function () {
                     video.pause();
-                });
+                }, { once: true });
             }
 
-            // Tampilkan teks tepat 10 detik (10000 ms) sejak gerbang mulai membuka
-            setTimeout(revealKolomPertama, delayMs);
+            // Fallback timer tepat saat bingkai Jawa biru terbuka (~5.4 detik pada kecepatan normal 1.0x)
+            revealTimerId = setTimeout(revealKolomPertama, delayMs);
         }
 
         function triggerOpen() {
             if (isOpened) return;
             isOpened = true;
 
-            // Pastikan video tetap terkunci di frame 0 (gerbang tertutup) selama proses scroll turun
+            // Pastikan video belum berjalan selama proses scroll turun
             canPlayGateVideo = false;
-            if (video) {
+            if (video && !video.paused) {
                 try {
                     video.pause();
-                    video.currentTime = 0.001;
                 } catch (e) {}
             }
 
@@ -361,11 +345,10 @@
                 song.play().catch(e => console.log("Audio autoplay prevented:", e));
             }
 
-            // Scroll menuju section #open (750ms), tahan gerbang tertutup selama 350ms agar terlihat jelas,
-            // lalu mulai animasi gerbang membuka + timer teks 10 detik
+            // Scroll mulus menuju section #open (650ms), lalu langsung putar video dengan kecepatan normal (30fps mulus)
             const openTarget = document.getElementById('open');
-            smoothScrollToElement(openTarget, 750, function () {
-                setTimeout(startGateVideoAndTimer, 350);
+            smoothScrollToElement(openTarget, 650, function () {
+                requestAnimationFrame(startGateVideoAndTimer);
             });
         }
 
